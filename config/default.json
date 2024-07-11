@@ -1,0 +1,5 @@
+{
+  "env": "prod",
+  "debug": false,
+  "port": 5050
+}
