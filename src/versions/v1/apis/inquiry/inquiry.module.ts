@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { MongoPrismaService } from '../../../../prisma';
-import { GeneralInquiryController } from './general-inquiry.controller';
-import { GeneralInquiryService } from './general-inquiry.service';
+import { EmailsModule } from '../email';
+import { GeneralInquiryController } from './inquiry.controller';
+import { GeneralInquiryService } from './inquiry.service';
 
 @Module({
+  imports: [EmailsModule],
   controllers: [GeneralInquiryController],
   providers: [GeneralInquiryService, MongoPrismaService],
 })

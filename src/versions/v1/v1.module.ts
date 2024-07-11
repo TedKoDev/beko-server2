@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { GeneralInquiryModule } from './apis/general-inquiry';
+import { GeneralInquiryModule } from './apis/inquiry';
 
 @Module({
   imports: [GeneralInquiryModule],
