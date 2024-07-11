@@ -4,9 +4,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LoggingInterceptor } from './interceptor';
 import { MongoPrismaService } from './prisma';
+import { V1Module } from './versions/v1';
 
 @Module({
-  imports: [],
+  imports: [V1Module],
   controllers: [AppController],
   providers: [
     AppService,

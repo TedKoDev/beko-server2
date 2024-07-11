@@ -20,7 +20,6 @@ model GeneralInquiry {
   email       String
   inquiryType String
   message     String
-  consent     Boolean
   answered    Boolean  @default(false)
   createdAt   DateTime @default(now())
 }
