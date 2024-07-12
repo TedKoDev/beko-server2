@@ -32,7 +32,7 @@ export class GeneralInquiryController {
             ? '홍이그룹'
             : '커작어린이본부';
 
-      this.emailService.sendEmail({
+      await this.emailService.sendEmail({
         receiverEmail: config.get('email.receiverEmail'),
         subject: `${serviceName} - ${createGeneralInquiryDto.inquiryType} 문의`,
         content: `
