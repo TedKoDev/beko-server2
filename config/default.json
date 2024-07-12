@@ -1,5 +1,10 @@
 {
   "env": "prod",
   "debug": false,
-  "port": 5050
+  "port": 5050,
+  "email": {
+    "user": "gcc.offical.mail@gmail.com",
+    "pass": "bbnb xewz esay ybha",
+    "receiverEmail": "yongp8888@gmail.com"
+  }
 }

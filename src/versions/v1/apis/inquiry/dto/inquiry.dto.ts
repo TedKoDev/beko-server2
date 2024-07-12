@@ -1,10 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsEmail, IsEnum, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { ServiceName } from '../../../../../types/v1';
 
 export class InquiryDto {
   @ApiProperty({ description: 'name', required: true })
   @IsString()
+  @IsOptional()
   readonly name: string;
 
   @ApiProperty({ description: 'email', required: true })
@@ -25,9 +32,11 @@ export class InquiryDto {
 
   @ApiProperty({ description: 'additionalConsent', required: false })
   @IsBoolean()
+  @IsOptional()
   readonly additionalConsent?: boolean;
 
   @ApiProperty({ description: 'phone', required: false })
   @IsString()
+  @IsOptional()
   readonly phone?: string;
 }

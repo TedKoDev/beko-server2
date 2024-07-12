@@ -6,7 +6,6 @@ import { CreateEmailDto } from './email.dto';
 @Injectable()
 export class EmailsService {
   async sendEmail(createEmailDto: CreateEmailDto): Promise<void> {
-    console.log(config.get('email.user'), config.get('email.pass'));
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 465,

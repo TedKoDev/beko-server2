@@ -29,7 +29,6 @@ export class GeneralInquiryService {
       createGeneralInquiryDto.additionalConsent !== undefined &&
       createGeneralInquiryDto.phone !== undefined
     ) {
-      console.log(typeof createGeneralInquiryDto.additionalConsent);
       return this.prisma.inquiry.create({
         data: createGeneralInquiryDto,
       });

@@ -16,7 +16,7 @@ datasource db {
 
 model inquiry {
   id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  name              String
+  name              String?
   email             String
   message           String
   serviceType       ServiceName  
