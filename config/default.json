@@ -6,5 +6,23 @@
     "user": "gcc.offical.mail@gmail.com",
     "pass": "bbnb xewz esay ybha",
     "receiverEmail": "yongp8888@gmail.com"
+  },
+  "supabase": {
+    "url": "https://fkaarzstadnaqwlvpxmm.supabase.co",
+    "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZrYWFyenN0YWRuYXF3bHZweG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjIyMjg4MjUsImV4cCI6MjAzNzgwNDgyNX0.I7-S8NDt7THYqx995C0lUCd3V_ZavKgQmx8bm7jbONQ"
+  },
+  "jwt": {
+    "secret": "hi"
+  },
+  "mail": {
+    "host": "smtp.gmail.com",
+    "port": 465,
+    "user": "gcc.offical.mail@gmail.com",
+    "pass": "bbnb xewz esay ybha",
+    "from": "yongp8888@gmail.com"
+  },
+  "cafe24": {
+    "clientId": "63TxKJEKaceELEdPdQju",
+    "secret": "jBOHeke2iS"
   }
 }

@@ -31,3 +31,18 @@ enum ServiceName {
   HONGI_GROUP
   GENERAL_COFFEE_COORDINATOR
 }
+
+model users {
+  id                      String   @id @default(auto()) @map("_id") @db.ObjectId
+  name                    String
+  email                   String   @unique
+  encrypted_password      String
+  email_verification_token  String?
+  is_email_verified         Boolean  @default(false)
+}
+
+model auth_code {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  code    String
+  user_id  String
+}
