@@ -81,6 +81,7 @@ export class AuthController {
     @Body('client_secret') clientSecret: string,
     @Body('code') authCode: string,
   ) {
+    console.log(grantType, clientId, clientSecret, authCode);
     if (grantType !== 'authorization_code') {
       throw new Error('Unsupported grant type');
     }
