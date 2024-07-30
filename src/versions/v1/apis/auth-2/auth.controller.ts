@@ -105,6 +105,7 @@ export class AuthController {
 
   @Get('user-info-body')
   async getUserInfoBody(@Body('access_token') accessToken: string) {
+    console.log(accessToken);
     return this.authService.getUserInfoBody(accessToken);
   }
 }
