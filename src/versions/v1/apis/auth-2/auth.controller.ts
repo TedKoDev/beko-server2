@@ -55,7 +55,7 @@ export class AuthController {
     return res.send('Email confirmed');
   }
 
-  @Post('authorize')
+  @Get('authorize')
   async authorize(
     @Query('response_type') responseType: string,
     @Query('client_id') clientId: string,
@@ -63,7 +63,6 @@ export class AuthController {
     @Query('state') state: string,
     @Res() res,
   ) {
-    console.log(responseType, clientId, redirectUri, state);
     if (responseType !== 'code' || clientId !== config.get('cafe24.clientId')) {
       return res.status(400).send('Invalid request');
     }
