@@ -25,5 +25,8 @@
   "cafe24": {
     "clientId": "63TxKJEKaceELEdPdQju",
     "secret": "jBOHeke2iS"
+  },
+  "api": {
+    "key": "276067109ffe778ec6b4de82d433bdff"
   }
 }

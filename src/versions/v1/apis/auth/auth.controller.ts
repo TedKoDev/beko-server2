@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import * as config from 'config';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -9,10 +17,12 @@ import {
   ConfirmEmailDto,
   GetTokenDto,
   GetUserInfoBodyDto,
+  KeojakGetTokenDto,
   LoginUserDto,
   RegisterUserDto,
 } from './dto';
 import { AuthorizeDto } from './dto/authorize.dto';
+import { ApiKeyGuard } from './guards';
 
 @Controller({
   path: 'auth',
@@ -36,14 +46,21 @@ export class AuthController {
 
   @Get('authorize')
   async authorize(
-    @Query() { client_id, redirect_uri, response_type, state }: AuthorizeDto,     
+    @Query() { client_id, redirect_uri, response_type, state }: AuthorizeDto,
     @Res() res: Response,
   ) {
-    if (response_type !== 'code' || client_id !== config.get('cafe24.clientId')) {
+    if (
+      response_type !== 'code' ||
+      client_id !== config.get('cafe24.clientId')
+    ) {
       return res.status(400).send('Invalid request');
     }
 
-    res.render('login', { clientId: client_id, redirectUri: redirect_uri, state });
+    res.render('login', {
+      clientId: client_id,
+      redirectUri: redirect_uri,
+      state,
+    });
   }
 
   /** POST */
@@ -67,10 +84,9 @@ export class AuthController {
 
   @Post('login')
   async login(
-    @Body() dto: LoginUserDto,
+    @Body() { email, password, redirect_uri, state }: LoginUserDto,
     @Res() res: Response,
   ) {
-    const { email, password, redirect_uri, state} = dto
     const result = await this.authService.loginUser(email, password);
 
     if (!result) {
@@ -83,9 +99,8 @@ export class AuthController {
 
   @Post('token')
   async getToken(
-    @Body() tokenDto: GetTokenDto,
+    @Body() { code, client_id, client_secret, grant_type }: GetTokenDto,
   ) {
-    const { code, client_id, client_secret, grant_type } = tokenDto
     if (grant_type !== 'authorization_code') {
       throw new Error('Unsupported grant type');
     }
@@ -96,6 +111,12 @@ export class AuthController {
       throw new Error('Invalid client credentials');
     }
 
+    return this.authService.getToken(code);
+  }
+
+  @Post('keojak-token')
+  @UseGuards(ApiKeyGuard)
+  async getKeojakToken(@Body() { code }: KeojakGetTokenDto) {
     return this.authService.getToken(code);
   }
 
