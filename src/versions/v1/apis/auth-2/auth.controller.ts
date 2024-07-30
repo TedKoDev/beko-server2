@@ -47,7 +47,7 @@ export class AuthController {
       return res.status(401).send('Invalid credentials');
     }
     const redirectUrl = `${redirectUri}?code=${result.authCode}&state=${state}`;
-    console.log(redirectUri);
+    console.log(redirectUrl);
     res.redirect(redirectUrl);
   }
 
