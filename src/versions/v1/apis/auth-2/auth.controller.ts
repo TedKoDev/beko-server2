@@ -97,13 +97,13 @@ export class AuthController {
     return this.authService.getToken(authCode);
   }
 
-  @Get('user-info')
+  @Post('user-info')
   @UseGuards(AuthGuard('jwt'))
   async getUserInfo(@Req() req) {
     return this.authService.getUserInfo(req.user.userId);
   }
 
-  @Get('user-info-body')
+  @Post('user-info-body')
   async getUserInfoBody(@Body('access_token') accessToken: string) {
     console.log(accessToken);
     return this.authService.getUserInfoBody(accessToken);
