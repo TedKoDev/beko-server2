@@ -3,15 +3,15 @@ import { IsNotEmpty, IsString, IsUrl } from 'class-validator';
 export class AuthorizeDto {
   @IsString()
   @IsNotEmpty()
-  responseType: string;
+  response_type: string;
 
   @IsString()
   @IsNotEmpty()
-  clientId: string;
+  client_id: string;
 
   @IsUrl()
   @IsNotEmpty()
-  redirectUri: string;
+  redirect_uri: string;
 
   @IsString()
   @IsNotEmpty()

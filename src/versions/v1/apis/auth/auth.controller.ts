@@ -36,14 +36,14 @@ export class AuthController {
 
   @Get('authorize')
   async authorize(
-    @Query() { clientId, redirectUri, responseType, state }: AuthorizeDto,
+    @Query() { client_id, redirect_uri, response_type, state }: AuthorizeDto,
     @Res() res: Response,
   ) {
-    if (responseType !== 'code' || clientId !== config.get('cafe24.clientId')) {
+    if (response_type !== 'code' || client_id !== config.get('cafe24.clientId')) {
       return res.status(400).send('Invalid request');
     }
 
-    res.render('login', { clientId, redirectUri, state });
+    res.render('login', { clientId: client_id, redirectUri: redirect_uri, state });
   }
 
   /** POST */
