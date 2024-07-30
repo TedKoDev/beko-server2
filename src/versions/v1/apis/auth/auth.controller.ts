@@ -2,18 +2,20 @@ import {
   Body,
   Controller,
   Get,
+  Inject,
   Post,
   Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import * as config from 'config';
+import { Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 
-import { Response } from 'express';
-import { EmailService } from '../email/email.service';
-import { AuthService } from './auth.service';
+import { EMAIL_SERVICE_TOKEN, EmailService } from '../email';
+import { AUTH_SERVICE_TOKEN, AuthService } from './auth.service';
 import {
+  AuthorizeDto,
   ConfirmEmailDto,
   GetTokenDto,
   GetUserInfoBodyDto,
@@ -21,7 +23,6 @@ import {
   LoginUserDto,
   RegisterUserDto,
 } from './dto';
-import { AuthorizeDto } from './dto/authorize.dto';
 import { ApiKeyGuard } from './guards';
 
 @Controller({
@@ -30,7 +31,9 @@ import { ApiKeyGuard } from './guards';
 })
 export class AuthController {
   constructor(
+    @Inject(AUTH_SERVICE_TOKEN)
     private readonly authService: AuthService,
+    @Inject(EMAIL_SERVICE_TOKEN)
     private readonly emailService: EmailService,
   ) {}
 

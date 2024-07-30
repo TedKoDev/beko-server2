@@ -1,18 +1,16 @@
+import { MongoPrismaService } from '@/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-
 import * as config from 'config';
 import { pbkdf2Sync } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 
-import { MongoPrismaService } from '../../../../prisma';
-import { EmailService } from '../email/email.service';
+export const AUTH_SERVICE_TOKEN = 'AUTH_SERVICE_TOKEN';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: MongoPrismaService,
-    private readonly emailService: EmailService,
     private readonly jwtService: JwtService,
   ) {}
 

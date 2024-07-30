@@ -1,11 +1,14 @@
+import { CustomException } from '@/plugins';
+import { MongoPrismaService } from '@/prisma/prisma.service';
+import { ServiceName } from '@/types/v1';
 import { Injectable } from '@nestjs/common';
-import { CustomException } from '../../../../plugins';
-import { MongoPrismaService } from '../../../../prisma';
-import { ServiceName } from '../../../../types/v1';
+
 import { CreateInquiryDto } from './dto';
 
+export const INQUIRY_SERVICE_TOKEN = 'INQUIRY_SERVICE_TOKEN';
+
 @Injectable()
-export class GeneralInquiryService {
+export class InquiryService {
   constructor(private readonly prisma: MongoPrismaService) {}
 
   async create(createGeneralInquiryDto: CreateInquiryDto) {

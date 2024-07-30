@@ -1,7 +1,6 @@
+import { CustomException } from '@/plugins';
+import { ExceptionExpands } from '@/types';
 import { ArgumentsHost, Catch, ExceptionFilter, Logger } from '@nestjs/common';
-
-import { CustomException } from '../plugins/execption';
-import { ExceptionExpands } from '../types';
 
 export const HttpExceptionFilter = (
   debug: boolean = false,

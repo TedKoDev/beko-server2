@@ -1,12 +1,15 @@
+import { MongoPrismaService } from '@/prisma/prisma.service';
 import { Module } from '@nestjs/common';
-import { MongoPrismaService } from '../../../../prisma';
+
 import { EmailModule } from '../email';
-import { GeneralInquiryController } from './inquiry.controller';
-import { GeneralInquiryService } from './inquiry.service';
+import { EmailProvider } from '../email/email.provider';
+import { InquiryController } from './inquiry.controller';
+import { InquiryProvider } from './inquiry.provider';
 
 @Module({
   imports: [EmailModule],
-  controllers: [GeneralInquiryController],
-  providers: [GeneralInquiryService, MongoPrismaService],
+  controllers: [InquiryController],
+  providers: [MongoPrismaService, InquiryProvider, EmailProvider],
+  exports: [InquiryProvider],
 })
-export class GeneralInquiryModule {}
+export class InquiryModule {}

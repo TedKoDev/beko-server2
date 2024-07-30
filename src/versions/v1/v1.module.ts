@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './apis/auth';
-import { GeneralInquiryModule } from './apis/inquiry';
+import { InquiryModule } from './apis/inquiry';
+import { UserModule } from './apis/user';
 
 @Module({
-  imports: [GeneralInquiryModule, AuthModule],
+  imports: [InquiryModule, AuthModule, UserModule],
 })
 export class V1Module {}

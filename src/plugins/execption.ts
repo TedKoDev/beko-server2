@@ -1,9 +1,5 @@
+import { ExceptionExpands, ExceptionOptions, ExceptionResponse } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  ExceptionExpands,
-  ExceptionOptions,
-  ExceptionResponse,
-} from '../types';
 
 export class CustomException {
   public readonly traceId: string = uuidv4();

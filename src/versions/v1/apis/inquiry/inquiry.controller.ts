@@ -1,26 +1,28 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { CustomException } from '@/plugins';
+import { ServiceName } from '@/types/v1';
+import { Body, Controller, Inject, Post } from '@nestjs/common';
 import * as config from 'config';
 
-import { CustomException } from '../../../../plugins';
-import { ServiceName } from '../../../../types/v1';
-import { EmailService } from '../email';
+import { EMAIL_SERVICE_TOKEN, EmailService } from '../email';
 import { CreateInquiryDto } from './dto';
-import { GeneralInquiryService } from './inquiry.service';
+import { INQUIRY_SERVICE_TOKEN, InquiryService } from './inquiry.service';
 
 @Controller({
   path: 'general-inquiry',
   version: '1',
 })
-export class GeneralInquiryController {
+export class InquiryController {
   constructor(
-    private readonly generalInquiryService: GeneralInquiryService,
+    @Inject(INQUIRY_SERVICE_TOKEN)
+    private readonly inquiryService: InquiryService,
+    @Inject(EMAIL_SERVICE_TOKEN)
     private readonly emailService: EmailService,
   ) {}
 
   @Post()
   async create(@Body() createGeneralInquiryDto: CreateInquiryDto) {
     try {
-      const response = await this.generalInquiryService.create(
+      const response = await this.inquiryService.create(
         createGeneralInquiryDto,
       );
 

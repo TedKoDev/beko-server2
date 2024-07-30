@@ -1,11 +1,12 @@
+import { MongoPrismaService } from '@/prisma/prisma.service';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import * as config from 'config';
-import { MongoPrismaService } from '../../../../prisma';
-import { EmailModule } from '../email/email.module';
+
+import { EmailModule } from '../email';
 import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
+import { AuthProvider } from './auth.provider';
 import { JwtStrategy } from './jwt.strategy';
 
 @Module({
@@ -17,7 +18,8 @@ import { JwtStrategy } from './jwt.strategy';
     }),
     EmailModule,
   ],
-  providers: [AuthService, JwtStrategy, MongoPrismaService],
+  providers: [AuthProvider, JwtStrategy, MongoPrismaService],
   controllers: [AuthController],
+  exports: [AuthProvider],
 })
 export class AuthModule {}

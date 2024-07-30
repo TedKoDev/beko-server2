@@ -1,6 +1,9 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable } from '@nestjs/common';
+
 import { CreateEmailDto } from './email.dto';
+
+export const EMAIL_SERVICE_TOKEN = 'EMAIL_SERVICE_TOKEN';
 
 @Injectable()
 export class EmailService {
@@ -13,10 +16,6 @@ export class EmailService {
       to: email,
       subject: 'Welcome to Our App! Confirm your Email',
       template: 'confirmation',
-      // context: {
-      //   name: 'dmail',
-      //   url,
-      // },
     });
   }
 

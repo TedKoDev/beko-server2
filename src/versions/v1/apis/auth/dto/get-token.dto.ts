@@ -18,8 +18,8 @@ export class GetTokenDto {
   code: string;
 
   @IsString()
-  refresh_token: string
+  refresh_token: string;
 
   @IsString()
-  redirect_uri: string
+  redirect_uri: string;
 }
