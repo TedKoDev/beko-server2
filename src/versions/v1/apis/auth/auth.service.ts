@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
+import * as config from 'config';
 import { pbkdf2Sync } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+
 import { MongoPrismaService } from '../../../../prisma';
-import { EmailService } from '../email-2/email.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -16,9 +18,7 @@ export class AuthService {
 
   async registerUser(email: string, password: string, name: string) {
     const emailVerificationToken = uuidv4();
-
-    const pbkdf2 = pbkdf2Sync(password, 'salt', 1000, 64, 'sha512');
-    const encryptedPassword = pbkdf2.toString('base64');
+    const encryptedPassword = this._encryptPassword(password);
 
     const data = await this.prisma.users.create({
       data: {
@@ -43,10 +43,11 @@ export class AuthService {
       throw new Error('Invalid credentials');
     }
 
-    const pbkdf2 = pbkdf2Sync(password, 'salt', 1000, 64, 'sha512');
-    const encryptedPassword = pbkdf2.toString('base64');
-    const isPasswordValid = data.encrypted_password === encryptedPassword;
-    console.log(encryptedPassword === data.encrypted_password);
+    const isPasswordValid = this._comparePassword(
+      password,
+      data.encrypted_password,
+    );
+
     if (!isPasswordValid) {
       throw new Error('Invalid credentials or email not verified');
     }
@@ -76,9 +77,11 @@ export class AuthService {
     }
 
     const user = data;
-    const pbkdf2 = pbkdf2Sync(password, 'salt', 1000, 64, 'sha512');
-    const encryptedPassword = pbkdf2.toString('base64');
-    const isPasswordValid = data.encrypted_password === encryptedPassword;
+
+    const isPasswordValid = this._comparePassword(
+      password,
+      data.encrypted_password,
+    );
 
     if (!isPasswordValid) {
       return null;
@@ -131,5 +134,18 @@ export class AuthService {
   async getUserInfoBody(accessToken: string) {
     const payload = this.jwtService.verify(accessToken);
     return this.getUserInfo(payload.userId);
+  }
+
+  _comparePassword(password: string, encryptedPassword: string) {
+    return this._encryptPassword(password) === encryptedPassword;
+  }
+
+  _encryptPassword(password: string) {
+    const salt = config.get<string>('pbkdf2.salt');
+    const iterations = config.get<number>('pbkdf2.iterations');
+    const keylen = config.get<number>('pbkdf2.keylen');
+    const digest = config.get<string>('pbkdf2.digest');
+    const pbkdf2 = pbkdf2Sync(password, salt, iterations, keylen, digest);
+    return pbkdf2.toString('base64');
   }
 }

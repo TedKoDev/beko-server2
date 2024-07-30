@@ -2,14 +2,15 @@
   "env": "prod",
   "debug": false,
   "port": 3000,
-  "email": {
-    "user": "gcc.offical.mail@gmail.com",
-    "pass": "bbnb xewz esay ybha",
-    "receiverEmail": "yongp8888@gmail.com"
-  },
   "supabase": {
     "url": "https://fkaarzstadnaqwlvpxmm.supabase.co",
     "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZrYWFyenN0YWRuYXF3bHZweG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjIyMjg4MjUsImV4cCI6MjAzNzgwNDgyNX0.I7-S8NDt7THYqx995C0lUCd3V_ZavKgQmx8bm7jbONQ"
+  },
+  "pbkdf2": {
+    "salt": "c59dac21a49dd2a8ff0984ce2925919e",
+    "iterations": 100,
+    "keylen": 64,
+    "digest": "sha512"
   },
   "jwt": {
     "secret": "hi"

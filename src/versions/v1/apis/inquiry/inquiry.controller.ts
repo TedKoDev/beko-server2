@@ -3,7 +3,7 @@ import * as config from 'config';
 
 import { CustomException } from '../../../../plugins';
 import { ServiceName } from '../../../../types/v1';
-import { EmailsService } from '../email';
+import { EmailService } from '../email';
 import { CreateInquiryDto } from './dto';
 import { GeneralInquiryService } from './inquiry.service';
 
@@ -14,7 +14,7 @@ import { GeneralInquiryService } from './inquiry.service';
 export class GeneralInquiryController {
   constructor(
     private readonly generalInquiryService: GeneralInquiryService,
-    private readonly emailService: EmailsService,
+    private readonly emailService: EmailService,
   ) {}
 
   @Post()
