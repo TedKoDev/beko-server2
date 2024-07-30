@@ -11,9 +11,12 @@ export class LoginUserDto {
 
   @IsString()
   @IsNotEmpty()
-  redirectUri: string;
+  redirect_uri: string;
 
   @IsString()
   @IsNotEmpty()
   state: string;
+
+  @IsString()
+  client_id: string;
 }

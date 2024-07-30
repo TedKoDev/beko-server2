@@ -3,17 +3,23 @@ import { IsNotEmpty, IsString } from 'class-validator';
 export class GetTokenDto {
   @IsString()
   @IsNotEmpty()
-  grantType: string;
+  grant_type: string;
 
   @IsString()
   @IsNotEmpty()
-  clientId: string;
+  client_id: string;
 
   @IsString()
   @IsNotEmpty()
-  clientSecret: string;
+  client_secret: string;
 
   @IsString()
   @IsNotEmpty()
-  authCode: string;
+  code: string;
+
+  @IsString()
+  refresh_token: string
+
+  @IsString()
+  redirect_uri: string
 }

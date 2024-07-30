@@ -36,7 +36,7 @@ export class AuthController {
 
   @Get('authorize')
   async authorize(
-    @Query() { client_id, redirect_uri, response_type, state }: AuthorizeDto,
+    @Query() { client_id, redirect_uri, response_type, state }: AuthorizeDto,     
     @Res() res: Response,
   ) {
     if (response_type !== 'code' || client_id !== config.get('cafe24.clientId')) {
@@ -67,38 +67,40 @@ export class AuthController {
 
   @Post('login')
   async login(
-    { email, password, redirectUri, state }: LoginUserDto,
+    @Body() dto: LoginUserDto,
     @Res() res: Response,
   ) {
+    const { email, password, redirect_uri, state} = dto
     const result = await this.authService.loginUser(email, password);
 
     if (!result) {
       return res.status(401).send('Invalid credentials');
     }
 
-    const redirectUrl = `${redirectUri}?code=${result.authCode}&state=${state}`;
+    const redirectUrl = `${redirect_uri}?code=${result.authCode}&state=${state}`;
     res.redirect(redirectUrl);
   }
 
   @Post('token')
   async getToken(
-    @Body() { authCode, clientId, clientSecret, grantType }: GetTokenDto,
+    @Body() tokenDto: GetTokenDto,
   ) {
-    if (grantType !== 'authorization_code') {
+    const { code, client_id, client_secret, grant_type } = tokenDto
+    if (grant_type !== 'authorization_code') {
       throw new Error('Unsupported grant type');
     }
 
     const innerClientId = config.get('cafe24.clientId');
     const innerClientSecret = config.get('cafe24.secret');
-    if (clientId !== innerClientId || clientSecret !== innerClientSecret) {
+    if (client_id !== innerClientId || client_secret !== innerClientSecret) {
       throw new Error('Invalid client credentials');
     }
 
-    return this.authService.getToken(authCode);
+    return this.authService.getToken(code);
   }
 
   @Post('user-info-body')
-  async getUserInfoBody(@Body() { accessToken }: GetUserInfoBodyDto) {
-    return this.authService.getUserInfoBody(accessToken);
+  async getUserInfoBody(@Body() { access_token }: GetUserInfoBodyDto) {
+    return this.authService.getUserInfoBody(access_token);
   }
 }
