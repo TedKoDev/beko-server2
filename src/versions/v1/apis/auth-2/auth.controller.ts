@@ -42,10 +42,12 @@ export class AuthController {
     @Res() res,
   ) {
     const result = await this.authService.loginUser(email, password);
+    console.log('result', result);
     if (!result) {
       return res.status(401).send('Invalid credentials');
     }
     const redirectUrl = `${redirectUri}?code=${result.authCode}&state=${state}`;
+    console.log(redirectUri);
     res.redirect(redirectUrl);
   }
 
