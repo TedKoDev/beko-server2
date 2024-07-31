@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import * as config from 'config';
 import { Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
 
 import { EMAIL_SERVICE_TOKEN, EmailService } from '../email';
 import { AUTH_SERVICE_TOKEN, AuthService } from './auth.service';
@@ -67,15 +66,6 @@ export class AuthController {
   }
 
   /** POST */
-  @Post('test')
-  async test() {
-    const emailVerificationToken = uuidv4();
-    return this.emailService.sendUserConfirmation(
-      'yongp98@naver.com',
-      emailVerificationToken,
-    );
-  }
-
   @Post('register')
   async register(@Body() { email, name, password }: RegisterUserDto) {
     await this.authService.registerUser(email, password, name);
@@ -96,7 +86,7 @@ export class AuthController {
       return res.status(401).send('Invalid credentials');
     }
 
-    const redirectUrl = `${redirect_uri}?code=${result.authCode}&state=${state}`;
+    const redirectUrl = `${redirect_uri}?code=${result.authCode}&state=${state}&keojak_code=${result.keojakCode}`;
     res.redirect(redirectUrl);
   }
 
@@ -108,8 +98,8 @@ export class AuthController {
       throw new Error('Unsupported grant type');
     }
 
-    const innerClientId = config.get('cafe24.clientId');
-    const innerClientSecret = config.get('cafe24.secret');
+    const innerClientId = config.get<string>('cafe24.clientId');
+    const innerClientSecret = config.get<string>('cafe24.secret');
     if (client_id !== innerClientId || client_secret !== innerClientSecret) {
       throw new Error('Invalid client credentials');
     }
@@ -119,8 +109,8 @@ export class AuthController {
 
   @Post('keojak-token')
   @UseGuards(ApiKeyGuard)
-  async getKeojakToken(@Body() { code }: KeojakGetTokenDto) {
-    return this.authService.getToken(code);
+  async getKeojakToken(@Body() { keojakCode }: KeojakGetTokenDto) {
+    return this.authService.getKeojakToken(keojakCode);
   }
 
   @Post('user-info-body')

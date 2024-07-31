@@ -37,7 +37,6 @@ async function bootstrap() {
         enableImplicitConversion: true,
       },
       exceptionFactory: (errors: ValidationError[] = []) => {
-        console.log(errors)
         const getErrorContent = (e: ValidationError) => {
           return e.constraints
             ? {

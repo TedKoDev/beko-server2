@@ -4,12 +4,11 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
 import * as config from 'config';
 
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor() {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();

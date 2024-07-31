@@ -7,15 +7,12 @@ import * as config from 'config';
 import { EmailModule } from '../email';
 import { AuthController } from './auth.controller';
 import { AuthProvider } from './auth.provider';
-import { JwtStrategy } from './jwt.strategy';
+import { JwtStrategy } from './strategy';
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: config.get('jwt.secret'),
-      signOptions: { expiresIn: '60m' },
-    }),
+    JwtModule.register({ secret: config.get('jwt.secret') }),
     EmailModule,
   ],
   providers: [AuthProvider, JwtStrategy, MongoPrismaService],

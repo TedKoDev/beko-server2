@@ -7,6 +7,6 @@ export class AppController {
 
   @Get('health-check')
   healthCheck(): number {
-    return 200;
+    return this.appService.getSuccess();
   }
 }

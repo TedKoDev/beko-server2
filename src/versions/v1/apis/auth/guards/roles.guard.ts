@@ -1,21 +1,13 @@
 import { ROLES_KEY } from '@/decorators';
-import { MongoPrismaService } from '@/prisma/prisma.service';
+import { MongoPrismaService } from '@/prisma';
 import { ROLE } from '@/types/v1';
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
-import { Request } from 'express';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private jwtService: JwtService,
     private readonly prisma: MongoPrismaService,
   ) {}
 
@@ -24,41 +16,21 @@ export class RolesGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+
     if (!requiredRoles) {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
-    const token = this.extractTokenFromHeader(request);
-    if (!token) {
-      throw new UnauthorizedException();
+    const { user } = context.switchToHttp().getRequest();
+    const userId = user.id;
+    if (!userId) {
+      return false;
     }
+    const { role } = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
 
-    try {
-      const payload = await this.jwtService.verifyAsync(token, {
-        secret: '',
-      });
-
-      const userInfo = await this.prisma.users.findFirst({
-        where: {
-          id: payload.id,
-        },
-      });
-
-      if (!userInfo) {
-        throw new UnauthorizedException('User not found');
-      }
-
-      request['user'] = { ...payload, userInfo: userInfo };
-
-      // return requiredRoles.some((role) => userInfo.role?.includes(role));
-    } catch {
-      throw new UnauthorizedException();
-    }
-  }
-
-  private extractTokenFromHeader(request: Request): string | undefined {
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
-    return type === 'Bearer' ? token : undefined;
+    return requiredRoles.some((requireRole) => role.includes(requireRole));
   }
 }

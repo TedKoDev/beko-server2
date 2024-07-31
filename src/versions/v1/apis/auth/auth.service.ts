@@ -1,4 +1,5 @@
 import { MongoPrismaService } from '@/prisma/prisma.service';
+import { ROLE } from '@/types/v1';
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as config from 'config';
@@ -25,6 +26,7 @@ export class AuthService {
         name,
         email_verification_token: emailVerificationToken,
         is_email_verified: false,
+        role: ROLE.USER,
       },
     });
 
@@ -51,11 +53,12 @@ export class AuthService {
     }
 
     const authCode = uuidv4();
+    const keojakCode = uuidv4();
     await this.prisma.auth_code.create({
-      data: { code: authCode, user_id: data.id },
+      data: { code: authCode, keojak_code: keojakCode, user_id: data.id },
     });
 
-    return { authCode };
+    return { authCode, keojakCode };
   }
 
   async confirmEmail(token: string) {
@@ -94,15 +97,20 @@ export class AuthService {
 
   async generateAuthCode(user: any) {
     const authCode = uuidv4();
+    const keojak_code = uuidv4();
     await this.prisma.auth_code.create({
-      data: { code: authCode, user_id: user.id },
+      data: {
+        code: authCode,
+        user_id: user.id,
+        keojak_code,
+      },
     });
 
-    return authCode;
+    return { authCode, keojak_code };
   }
 
   async getToken(authCode: string) {
-    const data = await this.prisma.auth_code.findFirst({
+    const data = await this.prisma.auth_code.findUnique({
       where: { code: authCode },
     });
 
@@ -112,7 +120,22 @@ export class AuthService {
 
     const payload = { userId: data.user_id };
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign(payload, { expiresIn: '1m' }),
+    };
+  }
+
+  async getKeojakToken(keojakCode: string) {
+    const data = await this.prisma.auth_code.findUnique({
+      where: { keojak_code: keojakCode },
+    });
+
+    if (!data) {
+      throw new Error('Invalid authorization code');
+    }
+
+    const payload = { userId: data.user_id };
+    return {
+      access_token: this.jwtService.sign(payload, { expiresIn: '1h' }),
     };
   }
 

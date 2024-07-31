@@ -40,13 +40,22 @@ model users {
   email_verification_token  String?   @unique
   is_email_verified         Boolean   @default(false)
   email_verified_at         DateTime?
+  role                      Role      @default(USER)
   createdAt                 DateTime  @default(now())
   updatedAt                 DateTime  @updatedAt
 }
 
+enum Role {
+  USER
+  SUPER_ADMIN
+  COMMUNITY_MANAGER
+}
+
 model auth_code {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  code        String    @unique
   user_id     String
+  code        String    @unique
+  keojak_code String    @unique
+  expired_at  DateTime  @default(now())
   createdAt   DateTime  @default(now())
 }
