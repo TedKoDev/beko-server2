@@ -133,7 +133,11 @@ export class AuthService {
       throw new Error('Invalid authorization code');
     }
 
-    const payload = { userId: data.user_id };
+    const user = await this.prisma.users.findUnique({
+      where: { id: data.user_id },
+    });
+
+    const payload = { userId: data.user_id, role: user.role };
     return {
       access_token: this.jwtService.sign(payload, { expiresIn: '1h' }),
     };

@@ -5,7 +5,7 @@ import { AppService } from './app.service';
 import { LoggingInterceptor } from './interceptor';
 import { MongoPrismaService } from './prisma';
 import { V1Module } from './versions/v1';
-import { JwtAuthGuard, RolesGuard } from './versions/v1/apis/auth';
+import { RolesGuard } from './versions/v1/apis/auth';
 
 @Module({
   imports: [V1Module],
@@ -16,10 +16,6 @@ import { JwtAuthGuard, RolesGuard } from './versions/v1/apis/auth';
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
     },
     {
       provide: APP_GUARD,

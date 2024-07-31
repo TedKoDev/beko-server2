@@ -1,5 +1,6 @@
 import { Controller, Get, Inject } from '@nestjs/common';
 
+import { Auth } from '@/decorators';
 import { USER_SERVIE_TOKEN, UserService } from './user.service';
 
 @Controller({
@@ -13,6 +14,7 @@ export class UserController {
   ) {}
 
   @Get('/')
+  @Auth(['USER'])
   async profile(userId: string) {
     return this.userService.profile(userId);
   }
