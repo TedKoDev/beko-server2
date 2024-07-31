@@ -1,14 +1,18 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { JwtModule } from '@nestjs/jwt';
+import * as config from 'config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LoggingInterceptor } from './interceptor';
 import { MongoPrismaService } from './prisma';
 import { V1Module } from './versions/v1';
-import { RolesGuard } from './versions/v1/apis/auth';
 
 @Module({
-  imports: [V1Module],
+  imports: [
+    V1Module, 
+    JwtModule.register({ global: true, secret: config.get('jwt.secret') })
+  ],
   controllers: [AppController],
   providers: [
     AppService,
@@ -16,10 +20,6 @@ import { RolesGuard } from './versions/v1/apis/auth';
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
     },
   ],
 })

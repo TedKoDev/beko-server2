@@ -1,6 +1,7 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Inject, Req } from '@nestjs/common';
 
 import { Auth } from '@/decorators';
+import { ROLE } from '@/types/v1';
 import { USER_SERVIE_TOKEN, UserService } from './user.service';
 
 @Controller({
@@ -13,9 +14,9 @@ export class UserController {
     private readonly userService: UserService,
   ) {}
 
-  @Get('/')
-  @Auth(['USER'])
-  async profile(userId: string) {
-    return this.userService.profile(userId);
+  @Get('/profile')
+  @Auth(['SUPER_ADMIN', 'USER'])
+  async profile(@Req() req: { user: { userId: string, role: ROLE }}) {
+    return this.userService.profile(req.user.userId)
   }
 }
