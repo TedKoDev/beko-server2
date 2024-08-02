@@ -28,6 +28,7 @@ model User {
   CommentLike        CommentLike[]
   Like               Like[]
   AdminAction        AdminAction[]
+  AuthCode           AuthCode[]
 }
 
 model SocialLogin {
@@ -39,6 +40,16 @@ model SocialLogin {
   updated_at       DateTime? @db.Timestamp
   deleted_at       DateTime? @db.Timestamp
   User             User      @relation(fields: [user_id], references: [user_id])
+}
+
+model AuthCode {
+  id          Int       @id @default(autoincrement())
+  user_id     Int       
+  code        String    @unique
+  keojak_code String    @unique
+  expired_at  DateTime
+  createdAt   DateTime  @default(now())
+  User        User      @relation(fields: [user_id], references: [user_id])
 }
 
 model Point {
