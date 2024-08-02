@@ -19,9 +19,9 @@ export class PostService {
     // });
     return this.prisma.user.create({
       data: {
-        email: 'yontp@',
+        email: 'tedhong',
         password_hash: '123123',
-        username: '박윤찬',
+        username: '홍태의',
         account_status: 'ACTIVE',
         role: 'ADMIN',
         sign_up_ip: '',

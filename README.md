@@ -20,3 +20,9 @@ pnpm prisma:init
 ```
 pnpm prisma:migrate
 ```
+
+### 스타트
+
+```
+pnpm start:dev
+```

@@ -1,18 +1,21 @@
-import { IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
-export class AuthorizeDto {
-  @IsString()
-  response_type: string;
+export class CreatePostDto {
+  @IsNumber()
+  userId: number;
 
-  @IsString()
-  client_id: string;
-
-  @IsString()
-  state: string;
+  @IsNumber()
+  categoryId: number;
 
   @IsString()
-  redirect_uri: string;
+  @IsNotEmpty()
+  title: string;
 
   @IsString()
-  sso_code: string;
+  @IsNotEmpty()
+  content: string;
+
+  @IsString()
+  @IsNotEmpty()
+  type: string;
 }
