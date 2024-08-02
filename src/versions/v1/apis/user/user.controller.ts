@@ -16,7 +16,7 @@ export class UserController {
 
   @Get('/profile')
   @Auth(['SUPER_ADMIN', 'USER'])
-  async profile(@Req() req: { user: { userId: string, role: ROLE }}) {
-    return this.userService.profile(req.user.userId)
+  async profile(@Req() req: { user: { userId: string; role: ROLE } }) {
+    return this.userService.profile(req.user.userId);
   }
 }

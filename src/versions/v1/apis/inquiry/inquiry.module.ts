@@ -1,4 +1,4 @@
-import { MongoPrismaService } from '@/prisma/prisma.service';
+import { MongoPrismaService } from '@/prisma';
 import { Module } from '@nestjs/common';
 
 import { EmailModule } from '../email';

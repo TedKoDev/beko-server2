@@ -117,4 +117,9 @@ export class AuthController {
   async getUserInfoBody(@Body() { access_token }: GetUserInfoBodyDto) {
     return this.authService.getUserInfoBody(access_token);
   }
+
+  @Post('social-login')
+  async socialLogin() {
+    // return this.authService.findOrCreateUserFromSocialLogin()
+  }
 }

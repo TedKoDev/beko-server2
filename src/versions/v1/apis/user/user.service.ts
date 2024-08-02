@@ -1,4 +1,4 @@
-import { MongoPrismaService } from '@/prisma/prisma.service';
+import { MongoPrismaService } from '@/prisma';
 import { Injectable } from '@nestjs/common';
 
 export const USER_SERVIE_TOKEN = 'USER_SERVIE_TOKEN';

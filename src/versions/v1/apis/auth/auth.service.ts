@@ -1,4 +1,4 @@
-import { MongoPrismaService } from '@/prisma/prisma.service';
+import { MongoPrismaService } from '@/prisma';
 import { ROLE } from '@/types/v1';
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -15,6 +15,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
+  // 회원가입
   async registerUser(email: string, password: string, name: string) {
     const emailVerificationToken = uuidv4();
     const encryptedPassword = this._encryptPassword(password);
@@ -33,6 +34,7 @@ export class AuthService {
     return data;
   }
 
+  // 로그인
   async loginUser(email: string, password: string) {
     const data = await this.prisma.users.findUnique({
       where: { email },
@@ -61,6 +63,7 @@ export class AuthService {
     return { authCode, keojakCode };
   }
 
+  // 이메일 인증
   async confirmEmail(token: string) {
     const data = await this.prisma.users.updateMany({
       where: { email_verification_token: token },
@@ -70,6 +73,7 @@ export class AuthService {
     return data;
   }
 
+  // 유효한 사용자인지 확인
   async validateUser(email: string, password: string): Promise<any> {
     const data = await this.prisma.users.findUnique({ where: { email } });
 
@@ -95,6 +99,7 @@ export class AuthService {
     return user;
   }
 
+  // 인증 코드 생성
   async generateAuthCode(user: any) {
     const authCode = uuidv4();
     const keojak_code = uuidv4();
@@ -109,6 +114,7 @@ export class AuthService {
     return { authCode, keojak_code };
   }
 
+  // 카페 24 인증 토큰 발급
   async getToken(authCode: string) {
     const data = await this.prisma.auth_code.findUnique({
       where: { code: authCode },
@@ -124,6 +130,7 @@ export class AuthService {
     };
   }
 
+  // 커작 인증 토큰 발급
   async getKeojakToken(keojakCode: string) {
     const data = await this.prisma.auth_code.findUnique({
       where: { keojak_code: keojakCode },
@@ -143,6 +150,7 @@ export class AuthService {
     };
   }
 
+  // 사용자 정보
   async getUserInfo(userId: string) {
     const data = await this.prisma.users.findUnique({
       where: { id: userId },
@@ -156,15 +164,58 @@ export class AuthService {
     return data;
   }
 
+  async findOrCreateUserFromSocialLogin({
+    provider,
+    providerUserId,
+    name,
+  }: {
+    provider: string;
+    providerUserId: string;
+    email?: string;
+    name?: string;
+  }) {
+    const socialLogin = await this.prisma.social_login.findFirst({
+      where: {
+        provider,
+        providerUserId,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (socialLogin) {
+      return socialLogin.user;
+    }
+
+    this.prisma.users.create({
+      data: {
+        encrypted_password: null,
+        email: null,
+        name,
+        role: ROLE.USER,
+        socialLogins: {
+          create: {
+            provider,
+            providerUserId,
+          },
+        },
+      },
+    });
+  }
+
+  // 사용자 정보 가져오기
   async getUserInfoBody(accessToken: string) {
     const payload = this.jwtService.verify(accessToken);
     return this.getUserInfo(payload.userId);
   }
 
+  // 비밀번호 일치 여부 확인
   _comparePassword(password: string, encryptedPassword: string) {
     return this._encryptPassword(password) === encryptedPassword;
   }
 
+  // 비밀번호 암호화
   _encryptPassword(password: string) {
     const salt = config.get<string>('pbkdf2.salt');
     const iterations = config.get<number>('pbkdf2.iterations');

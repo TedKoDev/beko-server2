@@ -10,8 +10,8 @@ import { V1Module } from './versions/v1';
 
 @Module({
   imports: [
-    V1Module, 
-    JwtModule.register({ global: true, secret: config.get('jwt.secret') })
+    V1Module,
+    JwtModule.register({ global: true, secret: config.get('jwt.secret') }),
   ],
   controllers: [AppController],
   providers: [

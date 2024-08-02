@@ -15,6 +15,11 @@
   "jwt": {
     "secret": "hi"
   },
+  "database": {
+    "postsql": {
+      "url": "postgresql://admin:1234@localhost:5432/keojak-community?schema=public"
+    }
+  },
   "mail": {
     "host": "smtp.gmail.com",
     "port": 465,

@@ -1,1 +1,2 @@
-export * from './prisma.service';
+export * from './mongo-prisma.service';
+export * from './postsql-prisma.service';

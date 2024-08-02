@@ -1,5 +1,5 @@
 import { CustomException } from '@/plugins';
-import { MongoPrismaService } from '@/prisma/prisma.service';
+import { MongoPrismaService } from '@/prisma';
 import { ServiceName } from '@/types/v1';
 import { Injectable } from '@nestjs/common';
 
