@@ -62,7 +62,7 @@ export class PostsService {
 
     // 작성자 확인 및 사용자 역할 확인
     if (post.user_id !== userId) {
-      const user = await this.prisma.user.findUnique({
+      const user = await this.prisma.users.findUnique({
         where: { user_id: userId },
       });
       if (user.role !== 'ADMIN') {
