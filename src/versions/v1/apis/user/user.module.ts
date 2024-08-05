@@ -1,4 +1,4 @@
-import { MongoPrismaService } from '@/prisma';
+import { PrismaService } from '@/prisma';
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from '../auth';
@@ -7,7 +7,8 @@ import { UserProvider } from './user.provider';
 
 @Module({
   imports: [AuthModule],
-  providers: [MongoPrismaService, UserProvider],
+  providers: [PrismaService, UserProvider],
   controllers: [UserController],
+  exports: [UserProvider],
 })
 export class UserModule {}

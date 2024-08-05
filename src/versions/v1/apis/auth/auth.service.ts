@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as config from 'config';
 import { pbkdf2Sync } from 'crypto';
-import dayjs from 'dayjs';
+import * as dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 
 export const AUTH_SERVICE_TOKEN = 'AUTH_SERVICE_TOKEN';
@@ -61,28 +61,19 @@ export class AuthService {
     const existingAuthCode = await this.prisma.authCode.findUnique({
       where: { user_id: user.user_id },
     });
-    const authCode = existingAuthCode
-      ? await this.prisma.authCode.update({
-          where: { user_id: user.user_id },
-          data: {
-            expired_at: expiredAt,
-            code: uuidv4(),
-            keojak_code: uuidv4(),
-          },
-        })
-      : await this.prisma.authCode.create({
-          data: {
-            user_id: user.user_id,
-            expired_at: expiredAt,
-            code: uuidv4(),
-            keojak_code: uuidv4(),
-          },
-        });
 
-    return {
-      authCode: authCode.code,
-      keojakCode: authCode.keojak_code,
-    };
+    if (existingAuthCode) {
+      await this.prisma.authCode.delete({ where: { user_id: user.user_id } });
+    }
+
+    const { code, keojak_code } = await this.prisma.authCode.create({
+      data: {
+        user_id: user.user_id,
+        expired_at: expiredAt,
+      },
+    });
+
+    return { authCode: code, keojakCode: keojak_code };
   }
 
   // 이메일 인증

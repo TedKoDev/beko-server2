@@ -1,4 +1,4 @@
-import { MongoPrismaService } from '@/prisma';
+import { PrismaService } from '@/prisma';
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 
@@ -9,7 +9,7 @@ import { JwtStrategy } from './strategy';
 
 @Module({
   imports: [PassportModule.register({ defaultStrategy: 'jwt' }), EmailModule],
-  providers: [AuthProvider, JwtStrategy, MongoPrismaService],
+  providers: [AuthProvider, JwtStrategy, PrismaService],
   controllers: [AuthController],
   exports: [AuthProvider],
 })

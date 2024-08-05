@@ -11,12 +11,12 @@ import {
 import * as config from 'config';
 import { Response } from 'express';
 
-import { Auth } from '@/decorators';
 import { JwtService } from '@nestjs/jwt';
 import { AUTH_SERVICE_TOKEN, AuthService } from './auth.service';
 import {
   AuthorizeDto,
   ConfirmEmailDto,
+  DevLoginDto,
   GetTokenDto,
   GetUserInfoBodyDto,
   KeojakGetTokenDto,
@@ -45,7 +45,6 @@ export class AuthController {
   }
 
   @Get('authorize')
-  @Auth(['ANY'])
   async authorize(@Query() dto: AuthorizeDto, @Res() res: Response) {
     const { client_id, redirect_uri, response_type, state } = dto;
     const cafe24ClientId = config.get<string>('cafe24.clientId');
@@ -98,6 +97,16 @@ export class AuthController {
     }
 
     return this.authService.getToken(code);
+  }
+
+  @Post('keojak-dev-login')
+  @UseGuards(ApiKeyGuard)
+  async keojakDevLogin(@Body() dto: DevLoginDto) {
+    const { email, password } = dto;
+    const { keojakCode } = await this.authService.loginUser(email, password);
+    const { access_token } = await this.authService.getKeojakToken(keojakCode);
+
+    return { access_token };
   }
 
   @Post('keojak-token')

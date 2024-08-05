@@ -6,6 +6,6 @@ import { PostModule } from './apis/post';
 import { UserModule } from './apis/user';
 
 @Module({
-  imports: [InquiryModule, AuthModule, UserModule, PostModule],
+  imports: [InquiryModule, UserModule, AuthModule, PostModule],
 })
 export class V1Module {}

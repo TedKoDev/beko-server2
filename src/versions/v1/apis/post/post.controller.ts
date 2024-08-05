@@ -1,4 +1,4 @@
-import { Controller, Inject, Post } from '@nestjs/common';
+import { Controller, Get, Inject, Post } from '@nestjs/common';
 import { POST_SERVICE_TOKEN, PostService } from './post.service';
 
 @Controller({
@@ -15,5 +15,10 @@ export class PostController {
   async createPost() {
     console.log('hi');
     return this.postService.create();
+  }
+
+  @Get('/')
+  async getPosts() {
+    console.log('hi');
   }
 }

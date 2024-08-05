@@ -1,19 +1,19 @@
-import { MongoPrismaService } from '@/prisma';
+import { PrismaService } from '@/prisma';
 import { Injectable } from '@nestjs/common';
 
 export const USER_SERVIE_TOKEN = 'USER_SERVIE_TOKEN';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: MongoPrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async profile(userId: string) {
+  async profile(userId: number) {
     return this.prisma.users.findUnique({
-      where: { id: userId },
+      where: { user_id: userId },
       select: {
-        id: true,
+        user_id: true,
         email: true,
-        name: true,
+        username: true,
       },
     });
   }
