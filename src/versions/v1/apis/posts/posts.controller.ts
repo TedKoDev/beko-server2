@@ -1,4 +1,6 @@
 // src/posts/posts.controller.ts
+import { Auth } from '@/decorators';
+import { ROLE } from '@/types/v1';
 import {
   Body,
   Controller,
@@ -8,6 +10,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -20,12 +23,18 @@ import { PostsService } from './posts.service';
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
+  @Auth(['ANY'])
   @Post()
-  create(@Body() createPostDto: CreatePostDto) {
-    return this.postsService.create(createPostDto);
+  create(
+    @Body() createPostDto: CreatePostDto,
+    @Req() req: { user: { userId: number } }, // 인증된 사용자 정보를 가져옴
+  ) {
+    const userId = req.user.userId; // 사용자 ID를 추출
+    return this.postsService.create(userId, createPostDto); // userId를 전달
   }
 
   // pagination 적용
+  @Auth(['ANY'])
   @Get()
   async findAll(
     @Query('page') page: number = 1,
@@ -33,27 +42,31 @@ export class PostsController {
   ) {
     return this.postsService.findAll({ page, limit });
   }
+
+  @Auth(['ANY'])
   @Get(':id')
   async findOne(@Param('id') id: string) {
     await this.postsService.incrementViewCount(+id);
     return this.postsService.findOne(+id);
   }
 
-  // @Auth(['ANY']) 추가해서 작업하기 ㅣ
+  @Auth(['ANY'])
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
-    // const userId = req.user.id; // 인증된 사용자 정보를 가져옴
-
-    const userId = 1; // 임시로 사용자 ID를 1로 설정
+  update(
+    @Param('id') id: string,
+    @Body() updatePostDto: UpdatePostDto,
+    @Req() req: { user: { userId: number; role: ROLE } },
+  ) {
+    const userId = req.user.userId; // 인증된 사용자 정보를 가져옴
     return this.postsService.update(+id, userId, updatePostDto);
   }
 
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.postsService.remove(+id);
-  // }
+  @Auth(['ANY'])
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return this.postsService.remove(+id);
+  async remove(
+    @Param('id') id: string,
+    @Req() req: { user: { userId: number; role: ROLE } },
+  ) {
+    return this.postsService.remove(+id, req.user.userId, req.user.role);
   }
 }

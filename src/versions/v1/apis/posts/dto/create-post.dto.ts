@@ -1,10 +1,16 @@
 // src/posts/dto/create-post.dto.ts
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { PostType } from '@prisma/client';
+import { Type } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+import { CreateMediaDto } from '../../media/dto';
 
 export class CreatePostDto {
-  @IsNumber()
-  userId: number;
-
   @IsNumber()
   categoryId: number;
 
@@ -18,5 +24,10 @@ export class CreatePostDto {
 
   @IsString()
   @IsNotEmpty()
-  type;
+  type: PostType; // 타입은 enum으로 지정
+
+  @ValidateNested({ each: true })
+  @IsOptional()
+  @Type(() => CreateMediaDto)
+  media: CreateMediaDto[];
 }
