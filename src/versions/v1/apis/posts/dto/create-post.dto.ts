@@ -1,3 +1,4 @@
+// src/posts/dto/create-post.dto.ts
 import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreatePostDto {
@@ -17,5 +18,5 @@ export class CreatePostDto {
 
   @IsString()
   @IsNotEmpty()
-  type: string;
+  type;
 }

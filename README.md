@@ -27,3 +27,5 @@ pnpm prisma:migrate
 ```
 pnpm start:dev
 ```
+
+npx prisma migrate dev --name post_status_default --schema=prisma/postsql.prisma
