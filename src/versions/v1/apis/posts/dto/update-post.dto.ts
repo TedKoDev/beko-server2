@@ -29,4 +29,7 @@ export class UpdatePostDto {
   @Type(() => UpdateMediaDto)
   @IsOptional()
   media?: UpdateMediaDto[];
+  @IsOptional()
+  @IsString({ each: true })
+  tags?: string[];
 }

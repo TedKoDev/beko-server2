@@ -33,6 +33,11 @@ export class PostsService {
       await this.mediaService.createMedia(mediaData);
     }
 
+    // 태그 처리
+    if (createPostDto.tags && createPostDto.tags.length > 0) {
+      await this.handleTags(post.post_id, createPostDto.tags, false);
+    }
+
     return post;
   }
 
@@ -84,9 +89,48 @@ export class PostsService {
       await this.mediaService.createMedia(newMedia);
     }
 
+    // 기존 태그 삭제
+    await this.prisma.postTag.deleteMany({ where: { post_id: id } });
+
+    // 새로운 태그 추가
+    if (updatePostDto.tags && updatePostDto.tags.length > 0) {
+      await this.handleTags(updatedPost.post_id, updatePostDto.tags, false);
+    }
+
     return updatedPost;
   }
-  //pagination 적용
+
+  async handleTags(postId: number, tags: string[], isAdminTag: boolean) {
+    for (const tagName of tags) {
+      let tag = await this.prisma.tag.findUnique({
+        where: { tag_name: tagName },
+      });
+
+      if (tag) {
+        await this.prisma.tag.update({
+          where: { tag_id: tag.tag_id },
+          data: { usage_count: { increment: 1 } },
+        });
+      } else {
+        tag = await this.prisma.tag.create({
+          data: {
+            tag_name: tagName,
+            is_admin_tag: isAdminTag,
+            usage_count: 1, // 최초 추가 시 usage_count를 1로 설정
+          },
+        });
+      }
+
+      await this.prisma.postTag.create({
+        data: {
+          post_id: postId,
+          tag_id: tag.tag_id,
+        },
+      });
+    }
+  }
+
+  // pagination 적용
   async findAll(paginationQuery: { page: number; limit: number }) {
     const { page, limit } = paginationQuery;
     const skip = (page - 1) * limit;
@@ -143,6 +187,7 @@ export class PostsService {
   async findOne(id: number) {
     return this.prisma.post.findUnique({ where: { post_id: id } });
   }
+
   // 게시물 조회수 증가
   async incrementViewCount(id: number) {
     return this.prisma.post.update({

@@ -30,4 +30,8 @@ export class CreatePostDto {
   @IsOptional()
   @Type(() => CreateMediaDto)
   media: CreateMediaDto[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  tags?: string[];
 }

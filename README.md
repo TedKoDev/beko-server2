@@ -30,4 +30,4 @@ pnpm start:dev
 
 npx prisma migrate dev --name post_status_default --schema=prisma/postsql.prisma
 
-npx prisma migrate dev --name add_comment_media --schema=prisma/postsql.prisma
+npx prisma migrate dev --name like_isliked_deleted --schema=prisma/postsql.prisma
