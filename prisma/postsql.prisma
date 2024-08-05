@@ -1,44 +1,59 @@
 datasource db {
   provider = "postgresql"
   url      = env("POSTGRE_SQL_DATABASE_URL")
+  extensions = [uuidOssp(map: "uuid-ossp")]
 }
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
-model User {
-  user_id            Int              @id @default(autoincrement())
-  username           String           @db.VarChar(50)
-  email              String           @unique @db.VarChar(100)
-  password_hash      String           @db.VarChar(255)
-  profile_picture_url String?         @db.VarChar(255)
-  contact_number     String?          @db.VarChar(20)
-  role               Role             @default(USER)
-  account_status     AccountStatus    @default(ACTIVE)
-  last_login         DateTime?
-  sign_up_ip         String?          @db.VarChar(45)
-  created_at         DateTime         @default(now()) @db.Timestamp
-  updated_at         DateTime?        @db.Timestamp
-  deleted_at         DateTime?        @db.Timestamp
-  SocialLogin        SocialLogin[]
-  Point              Point[]
-  Post               Post[]
-  Comment            Comment[]
-  CommentLike        CommentLike[]
-  Like               Like[]
-  AdminAction        AdminAction[]
+model Users {
+  user_id             Int              @id @default(autoincrement())
+  username            String           @db.VarChar(50)
+  email               String           @unique @db.VarChar(100)
+  encrypted_password  String           @db.VarChar(255)
+  profile_picture_url String?          @db.VarChar(255)
+  phone_number        String?          @db.VarChar(20)
+  email_verification_token String?     @db.VarChar(255)
+  is_email_verified   Boolean          @default(false)
+  role                Role             @default(USER)
+  account_status      AccountStatus    @default(ACTIVE)
+  sign_up_ip          String?          @db.VarChar(45)
+  created_at          DateTime         @default(now()) @db.Timestamp
+  last_login_at       DateTime?
+  updated_at          DateTime?        @db.Timestamp
+  deleted_at          DateTime?        @db.Timestamp
+  SocialLogin         SocialLogin[]
+  Point               Point[]
+  Post                Post[]
+  Comment             Comment[]
+  CommentLike         CommentLike[]
+  Like                Like[]
+  AdminAction         AdminAction[]
+  AuthCode            AuthCode[]
 }
 
 model SocialLogin {
-  social_login_id  Int       @id @default(autoincrement())
+  social_login_id  Int        @id @default(autoincrement())
   user_id          Int
   provider         Provider
-  provider_user_id String    @db.VarChar(255)
-  created_at       DateTime  @default(now()) @db.Timestamp
-  updated_at       DateTime? @db.Timestamp
-  deleted_at       DateTime? @db.Timestamp
-  User             User      @relation(fields: [user_id], references: [user_id])
+  provider_user_id String     @db.VarChar(255)
+  created_at       DateTime   @default(now()) @db.Timestamp
+  updated_at       DateTime?  @db.Timestamp
+  deleted_at       DateTime?  @db.Timestamp
+  User             Users      @relation(fields: [user_id], references: [user_id])
+}
+
+model AuthCode {
+  id          Int         @id @default(autoincrement())
+  user_id     Int         @unique
+  code        String      @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  keojak_code String      @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  expired_at  DateTime
+  createdAt   DateTime    @default(now())
+  User        Users       @relation(fields: [user_id], references: [user_id])
 }
 
 model Point {
@@ -50,7 +65,7 @@ model Point {
   created_at    DateTime  @default(now()) @db.Timestamp
   updated_at    DateTime? @db.Timestamp
   deleted_at    DateTime? @db.Timestamp
-  User          User      @relation(fields: [user_id], references: [user_id])
+  User          Users      @relation(fields: [user_id], references: [user_id])
 }
 
 model Post {
@@ -66,7 +81,7 @@ model Post {
   created_at   DateTime   @default(now()) @db.Timestamp
   updated_at   DateTime?  @db.Timestamp
   deleted_at   DateTime?  @db.Timestamp
-  User         User       @relation(fields: [user_id], references: [user_id])
+  User         Users       @relation(fields: [user_id], references: [user_id])
   Category     Category   @relation(fields: [category_id], references: [category_id])
   Media        Media[]
   Comment      Comment[]
@@ -118,7 +133,7 @@ model Comment {
   updated_at       DateTime?  @db.Timestamp
   deleted_at       DateTime?  @db.Timestamp
   Post             Post       @relation(fields: [post_id], references: [post_id])
-  User             User       @relation(fields: [user_id], references: [user_id])
+  User             Users       @relation(fields: [user_id], references: [user_id])
   ParentComment    Comment?   @relation("CommentToComment", fields: [parent_comment_id], references: [comment_id])
   ChildComments    Comment[]  @relation("CommentToComment")
   CommentLike      CommentLike[]
@@ -133,7 +148,7 @@ model CommentLike {
   updated_at      DateTime? @db.Timestamp
   deleted_at      DateTime? @db.Timestamp
   Comment         Comment   @relation(fields: [comment_id], references: [comment_id])
-  User            User      @relation(fields: [user_id], references: [user_id])
+  User            Users      @relation(fields: [user_id], references: [user_id])
 }
 
 model Like {
@@ -145,7 +160,7 @@ model Like {
   updated_at  DateTime? @db.Timestamp
   deleted_at  DateTime? @db.Timestamp
   Post        Post      @relation(fields: [post_id], references: [post_id])
-  User        User      @relation(fields: [user_id], references: [user_id])
+  User        Users      @relation(fields: [user_id], references: [user_id])
 }
 
 model Tag {
@@ -189,7 +204,7 @@ model AdminAction {
   action_type     ActionType
   reason          String?   @db.Text
   action_timestamp DateTime @default(now()) @db.Timestamp
-  AdminUser       User      @relation(fields: [admin_user_id], references: [user_id])
+  AdminUser       Users      @relation(fields: [admin_user_id], references: [user_id])
 }
 
 enum Role {

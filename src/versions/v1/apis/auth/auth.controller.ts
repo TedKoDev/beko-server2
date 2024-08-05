@@ -11,11 +11,12 @@ import {
 import * as config from 'config';
 import { Response } from 'express';
 
-import { EMAIL_SERVICE_TOKEN, EmailService } from '../email';
+import { JwtService } from '@nestjs/jwt';
 import { AUTH_SERVICE_TOKEN, AuthService } from './auth.service';
 import {
   AuthorizeDto,
   ConfirmEmailDto,
+  DevLoginDto,
   GetTokenDto,
   GetUserInfoBodyDto,
   KeojakGetTokenDto,
@@ -32,29 +33,24 @@ export class AuthController {
   constructor(
     @Inject(AUTH_SERVICE_TOKEN)
     private readonly authService: AuthService,
-    @Inject(EMAIL_SERVICE_TOKEN)
-    private readonly emailService: EmailService,
+    private readonly jwtService: JwtService,
   ) {}
 
   /** GET */
   @Get('confirm')
-  async confirmEmail(
-    @Query() { token }: ConfirmEmailDto,
-    @Res() res: Response,
-  ) {
+  async confirmEmail(@Query() dto: ConfirmEmailDto, @Res() res: Response) {
+    const { token } = dto;
     await this.authService.confirmEmail(token);
     return res.send('Email confirmed');
   }
 
   @Get('authorize')
-  async authorize(
-    @Query() { client_id, redirect_uri, response_type, state }: AuthorizeDto,
-    @Res() res: Response,
-  ) {
-    if (
-      response_type !== 'code' ||
-      client_id !== config.get('cafe24.clientId')
-    ) {
+  async authorize(@Query() dto: AuthorizeDto, @Res() res: Response) {
+    const { client_id, redirect_uri, response_type, state } = dto;
+    const cafe24ClientId = config.get<string>('cafe24.clientId');
+    const isInvalidRequest =
+      response_type !== 'code' || client_id !== cafe24ClientId;
+    if (isInvalidRequest) {
       return res.status(400).send('Invalid request');
     }
 
@@ -67,21 +63,18 @@ export class AuthController {
 
   /** POST */
   @Post('register')
-  async register(@Body() { email, name, password }: RegisterUserDto) {
+  async register(@Body() dto: RegisterUserDto) {
+    const { email, name, password } = dto;
     await this.authService.registerUser(email, password, name);
-    return {
-      message:
-        'User registered. Please check your email for verification link.',
-    };
+    const message =
+      'User registered. Please check your email for verification link.';
+    return { message };
   }
 
   @Post('login')
-  async login(
-    @Body() { email, password, redirect_uri, state }: LoginUserDto,
-    @Res() res: Response,
-  ) {
+  async login(@Body() dto: LoginUserDto, @Res() res: Response) {
+    const { email, password, redirect_uri, state } = dto;
     const result = await this.authService.loginUser(email, password);
-
     if (!result) {
       return res.status(401).send('Invalid credentials');
     }
@@ -91,9 +84,8 @@ export class AuthController {
   }
 
   @Post('token')
-  async getToken(
-    @Body() { code, client_id, client_secret, grant_type }: GetTokenDto,
-  ) {
+  async getToken(@Body() dto: GetTokenDto) {
+    const { code, client_id, client_secret, grant_type } = dto;
     if (grant_type !== 'authorization_code') {
       throw new Error('Unsupported grant type');
     }
@@ -107,6 +99,16 @@ export class AuthController {
     return this.authService.getToken(code);
   }
 
+  @Post('keojak-dev-login')
+  @UseGuards(ApiKeyGuard)
+  async keojakDevLogin(@Body() dto: DevLoginDto) {
+    const { email, password } = dto;
+    const { keojakCode } = await this.authService.loginUser(email, password);
+    const { access_token } = await this.authService.getKeojakToken(keojakCode);
+
+    return { access_token };
+  }
+
   @Post('keojak-token')
   @UseGuards(ApiKeyGuard)
   async getKeojakToken(@Body() { keojakCode }: KeojakGetTokenDto) {
@@ -114,12 +116,9 @@ export class AuthController {
   }
 
   @Post('user-info-body')
-  async getUserInfoBody(@Body() { access_token }: GetUserInfoBodyDto) {
-    return this.authService.getUserInfoBody(access_token);
-  }
-
-  @Post('social-login')
-  async socialLogin() {
-    // return this.authService.findOrCreateUserFromSocialLogin()
+  async getUserInfoBody(@Body() dto: GetUserInfoBodyDto) {
+    const { access_token } = dto;
+    const payload = this.jwtService.verify(access_token);
+    return this.authService.getUserInfoBody(payload.userId);
   }
 }

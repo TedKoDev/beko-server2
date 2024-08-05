@@ -5,7 +5,7 @@ import { ROLE } from '@/types/v1';
 import { USER_SERVIE_TOKEN, UserService } from './user.service';
 
 @Controller({
-  path: 'user',
+  path: 'users',
   version: '1',
 })
 export class UserController {
@@ -14,9 +14,10 @@ export class UserController {
     private readonly userService: UserService,
   ) {}
 
-  @Get('/profile')
-  @Auth(['SUPER_ADMIN', 'USER'])
-  async profile(@Req() req: { user: { userId: string; role: ROLE } }) {
+  @Get('profile')
+  @Auth(['ANY'])
+  async profile(@Req() req: { user: { userId: number; role: ROLE } }) {
+    console.log('hi');
     return this.userService.profile(req.user.userId);
   }
 }

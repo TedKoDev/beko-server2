@@ -1,3 +1,6 @@
+-- CreateExtension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
 
@@ -55,6 +58,18 @@ CREATE TABLE "SocialLogin" (
     "deleted_at" TIMESTAMP,
 
     CONSTRAINT "SocialLogin_pkey" PRIMARY KEY ("social_login_id")
+);
+
+-- CreateTable
+CREATE TABLE "AuthCode" (
+    "id" SERIAL NOT NULL,
+    "user_id" INTEGER NOT NULL,
+    "code" UUID NOT NULL DEFAULT uuid_generate_v4(),
+    "keojak_code" UUID NOT NULL DEFAULT uuid_generate_v4(),
+    "expired_at" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AuthCode_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -222,10 +237,19 @@ CREATE TABLE "AdminAction" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "AuthCode_code_key" ON "AuthCode"("code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuthCode_keojak_code_key" ON "AuthCode"("keojak_code");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Tag_tag_name_key" ON "Tag"("tag_name");
 
 -- AddForeignKey
 ALTER TABLE "SocialLogin" ADD CONSTRAINT "SocialLogin_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("user_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuthCode" ADD CONSTRAINT "AuthCode_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("user_id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Point" ADD CONSTRAINT "Point_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("user_id") ON DELETE RESTRICT ON UPDATE CASCADE;

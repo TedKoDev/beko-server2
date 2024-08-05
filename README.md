@@ -1,4 +1,4 @@
-## 시작하기
+## 설치하기
 
 ```
 pnpm install
@@ -11,6 +11,7 @@ pnpm install
 docker를 활성화 시켜주세요.
 
 ```
+mkdir db
 pnpm docker:compose
 pnpm prisma:init
 ```
