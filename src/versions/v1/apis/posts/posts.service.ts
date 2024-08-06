@@ -1,6 +1,9 @@
 import { PrismaService } from '@/prisma/postsql-prisma.service';
-import { ROLE } from '@/types/v1';
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PostType, Prisma } from '@prisma/client';
 import { MediaService } from '../media';
 import { CreateMediaDto } from '../media/dto';
@@ -16,15 +19,46 @@ export class PostsService {
 
   async create(userId: number, createPostDto: CreatePostDto) {
     const postCreateInput: Prisma.PostCreateInput = {
-      title: createPostDto.title,
-      content: createPostDto.content,
-      type: createPostDto.type as PostType, // 타입 캐스팅
+      type: createPostDto.type,
       User: { connect: { user_id: userId } },
       Category: { connect: { category_id: createPostDto.categoryId } },
     };
+
     const post = await this.prisma.post.create({ data: postCreateInput });
 
-    // 미디어 정보가 있는 경우 생성
+    switch (createPostDto.type) {
+      case PostType.GENERAL:
+        await this.prisma.post_General.create({
+          data: {
+            post_id: post.post_id,
+            title: createPostDto.title,
+            content: createPostDto.content,
+          },
+        });
+        break;
+      case PostType.COLUMN:
+        await this.prisma.post_Column.create({
+          data: {
+            post_id: post.post_id,
+            title: createPostDto.title,
+            content: createPostDto.content,
+          },
+        });
+        break;
+      case PostType.QUESTION:
+        await this.prisma.post_Question.create({
+          data: {
+            post_id: post.post_id,
+            title: createPostDto.title,
+            content: createPostDto.content,
+            points: createPostDto.points,
+          },
+        });
+        break;
+      default:
+        throw new Error('Invalid post type');
+    }
+
     if (createPostDto.media && createPostDto.media.length > 0) {
       const mediaData = createPostDto.media.map((media) => ({
         ...media,
@@ -33,7 +67,6 @@ export class PostsService {
       await this.mediaService.createMedia(mediaData);
     }
 
-    // 태그 처리
     if (createPostDto.tags && createPostDto.tags.length > 0) {
       await this.handleTags(post.post_id, createPostDto.tags, false);
     }
@@ -42,13 +75,15 @@ export class PostsService {
   }
 
   async update(id: number, userId: number, updatePostDto: UpdatePostDto) {
-    // 게시물 정보 가져오기
     const post = await this.prisma.post.findUnique({
       where: { post_id: id },
       include: { User: true },
     });
 
-    // 작성자 확인 및 사용자 역할 확인
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
     if (post.user_id !== userId) {
       const user = await this.prisma.users.findUnique({
         where: { user_id: userId },
@@ -61,8 +96,6 @@ export class PostsService {
     }
 
     const postUpdateInput: Prisma.PostUpdateInput = {
-      title: updatePostDto.title,
-      content: updatePostDto.content,
       type: updatePostDto.type
         ? { set: updatePostDto.type as PostType }
         : undefined,
@@ -76,10 +109,41 @@ export class PostsService {
       data: postUpdateInput,
     });
 
-    // 기존 미디어 삭제
+    switch (updatePostDto.type) {
+      case PostType.GENERAL:
+        await this.prisma.post_General.update({
+          where: { post_id: id },
+          data: {
+            title: updatePostDto.title,
+            content: updatePostDto.content,
+          },
+        });
+        break;
+      case PostType.COLUMN:
+        await this.prisma.post_Column.update({
+          where: { post_id: id },
+          data: {
+            title: updatePostDto.title,
+            content: updatePostDto.content,
+          },
+        });
+        break;
+      case PostType.QUESTION:
+        await this.prisma.post_Question.update({
+          where: { post_id: id },
+          data: {
+            title: updatePostDto.title,
+            content: updatePostDto.content,
+            points: updatePostDto.points,
+          },
+        });
+        break;
+      default:
+        throw new Error('Invalid post type');
+    }
+
     await this.mediaService.deleteMediaByPostId(updatedPost.post_id);
 
-    // 새로운 미디어 추가
     if (updatePostDto.media && updatePostDto.media.length > 0) {
       const newMedia: CreateMediaDto[] = updatePostDto.media.map((media) => ({
         mediaUrl: media.mediaUrl,
@@ -89,10 +153,8 @@ export class PostsService {
       await this.mediaService.createMedia(newMedia);
     }
 
-    // 기존 태그 삭제
     await this.prisma.postTag.deleteMany({ where: { post_id: id } });
 
-    // 새로운 태그 추가
     if (updatePostDto.tags && updatePostDto.tags.length > 0) {
       await this.handleTags(updatedPost.post_id, updatePostDto.tags, false);
     }
@@ -116,7 +178,7 @@ export class PostsService {
           data: {
             tag_name: tagName,
             is_admin_tag: isAdminTag,
-            usage_count: 1, // 최초 추가 시 usage_count를 1로 설정
+            usage_count: 1,
           },
         });
       }
@@ -130,7 +192,6 @@ export class PostsService {
     }
   }
 
-  // pagination 적용
   async findAll(paginationQuery: { page: number; limit: number }) {
     const { page, limit } = paginationQuery;
     const skip = (page - 1) * limit;
@@ -139,7 +200,7 @@ export class PostsService {
       this.prisma.post.findMany({
         where: {
           status: 'PUBLIC',
-          deleted_at: null, // 삭제되지 않은 게시물만 가져오기
+          deleted_at: null,
         },
         skip,
         take: limit,
@@ -147,7 +208,7 @@ export class PostsService {
       this.prisma.post.count({
         where: {
           status: 'PUBLIC',
-          deleted_at: null, // 삭제되지 않은 게시물만 카운트
+          deleted_at: null,
         },
       }),
     ]);
@@ -160,18 +221,16 @@ export class PostsService {
     };
   }
 
-  async remove(postId: number, userId: number, userRole: ROLE) {
-    // 게시물을 조회하여 작성자 확인
+  async remove(postId: number, userId: number, userRole: string) {
     const post = await this.prisma.post.findUnique({
       where: { post_id: postId },
     });
 
     if (!post) {
-      throw new Error('Post not found');
+      throw new NotFoundException('Post not found');
     }
 
-    // 관리자가 아닌 경우, 작성자 본인만 삭제할 수 있도록 제한
-    if (userRole !== ROLE.ADMIN && post.user_id !== userId) {
+    if (userRole !== 'ADMIN' && post.user_id !== userId) {
       throw new ForbiddenException(
         'You are not authorized to delete this post',
       );
@@ -179,16 +238,14 @@ export class PostsService {
 
     return this.prisma.post.update({
       where: { post_id: postId },
-      data: { deleted_at: new Date() }, // deleted_at 필드 업데이트
+      data: { deleted_at: new Date() },
     });
   }
 
-  // 게시물 id로 게시물 조회
   async findOne(id: number) {
     return this.prisma.post.findUnique({ where: { post_id: id } });
   }
 
-  // 게시물 조회수 증가
   async incrementViewCount(id: number) {
     return this.prisma.post.update({
       where: { post_id: id },

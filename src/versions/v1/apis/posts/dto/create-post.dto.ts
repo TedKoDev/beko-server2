@@ -2,6 +2,7 @@
 import { PostType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -15,12 +16,16 @@ export class CreatePostDto {
   categoryId: number;
 
   @IsString()
-  @IsNotEmpty()
-  title: string;
+  @IsOptional()
+  title?: string;
 
   @IsString()
-  @IsNotEmpty()
-  content: string;
+  @IsOptional()
+  content?: string;
+
+  @IsOptional()
+  @IsInt()
+  points?: number;
 
   @IsString()
   @IsNotEmpty()

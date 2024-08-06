@@ -6,6 +6,7 @@ import * as config from 'config';
 import { pbkdf2Sync } from 'crypto';
 import * as dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
+import { PointsService } from '../point/points.service'; // PointsService 경로 수정
 
 export const AUTH_SERVICE_TOKEN = 'AUTH_SERVICE_TOKEN';
 
@@ -14,13 +15,14 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly pointsService: PointsService, // PointsService 주입
   ) {}
 
   // 회원가입
   async registerUser(email: string, password: string, name: string) {
     const emailVerificationToken = uuidv4();
     const encryptedPassword = this._encryptPassword(password);
-    return this.prisma.users.create({
+    const user = await this.prisma.users.create({
       data: {
         email,
         encrypted_password: encryptedPassword,
@@ -30,8 +32,15 @@ export class AuthService {
         role: ROLE.USER,
       },
     });
-  }
 
+    // 포인트 부여
+    await this.pointsService.create(user.user_id, {
+      pointsChange: 2000,
+      changeReason: 'Sign-up bonus',
+    });
+
+    return user;
+  }
   // 로그인
   async loginUser(email: string, password: string) {
     const user = await this.prisma.users.findUnique({

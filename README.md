@@ -22,6 +22,8 @@ pnpm prisma:init
 pnpm prisma:migrate
 ```
 
+npx prisma generate --schema=prisma/postsql.prisma
+
 ### 스타트
 
 ```

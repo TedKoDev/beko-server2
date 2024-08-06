@@ -163,12 +163,12 @@ model Post {
   Like         Like[]
   PostTag      PostTag[]
   PostView     PostView[]
-  General      General?
-  Column       Column?
-  Question     Question?
+  Post_General      Post_General?
+  Post_Column       Post_Column?
+  Post_Question     Post_Question?
 }
 
-model General {
+model Post_General {
   general_id    Int       @id @default(autoincrement())
   post_id       Int       @unique
   title         String    @db.VarChar(255)
@@ -179,7 +179,7 @@ model General {
   Post          Post      @relation(fields: [post_id], references: [post_id])
 }
 
-model Column {
+model Post_Column {
   column_id     Int       @id @default(autoincrement())
   post_id       Int       @unique
   title         String    @db.VarChar(255)
@@ -190,7 +190,7 @@ model Column {
   Post          Post      @relation(fields: [post_id], references: [post_id])
 }
 
-model Question {
+model Post_Question {
   question_id   Int       @id @default(autoincrement())
   post_id       Int       @unique
   title         String    @db.VarChar(255)
@@ -279,7 +279,8 @@ enum Provider {
 
 enum PostType {
   GENERAL
-  EDITOR
+  COLUMN
+  QUESTION
 }
 
 enum PostStatus {

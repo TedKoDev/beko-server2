@@ -1,4 +1,3 @@
-// src/posts/posts.controller.ts
 import { Auth } from '@/decorators';
 import { ROLE } from '@/types/v1';
 import {

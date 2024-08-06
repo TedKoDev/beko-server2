@@ -12,7 +12,7 @@ import { PointsService } from './points.service';
 export class PointsController {
   constructor(private readonly pointsService: PointsService) {}
 
-  @Auth(['ADMIN'])
+  @Auth(['ANY'])
   @Post(':userId')
   create(
     @Param('userId') userId: number,

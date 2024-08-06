@@ -1,6 +1,7 @@
 // src/versions/v1/apis/posts/dto/update-post.dto.ts
 import { Type } from 'class-transformer';
 import {
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -20,6 +21,10 @@ export class UpdatePostDto {
   @IsString()
   @IsOptional()
   type?: string;
+
+  @IsOptional()
+  @IsInt()
+  points?: number;
 
   @IsNumber()
   @IsOptional()
