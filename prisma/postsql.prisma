@@ -33,6 +33,8 @@ model Users {
   Like                Like[]
   AdminAction         AdminAction[]
   AuthCode            AuthCode[]
+  Following           Follow[] @relation("FollowingRelation")
+  Followers           Follow[] @relation("FollowerRelation")
 }
 
 model SocialLogin {
@@ -44,6 +46,17 @@ model SocialLogin {
   updated_at       DateTime?  @db.Timestamp
   deleted_at       DateTime?  @db.Timestamp
   User             Users      @relation(fields: [user_id], references: [user_id])
+}
+
+model Follow {
+  follow_id        Int      @id @default(autoincrement())
+  follower_id      Int
+  following_id     Int
+  created_at       DateTime @default(now()) @db.Timestamp
+  updated_at       DateTime? @db.Timestamp
+  deleted_at       DateTime? @db.Timestamp
+  follower         Users    @relation("FollowingRelation", fields: [follower_id], references: [user_id])
+  following        Users    @relation("FollowerRelation", fields: [following_id], references: [user_id])
 }
 
 model AuthCode {
@@ -68,11 +81,6 @@ model Point {
   User          Users      @relation(fields: [user_id], references: [user_id])
 }
 
-
-
-
-
-
 model Topic {
   topic_id    Int       @id @default(autoincrement())
   title       String    @db.VarChar(255)
@@ -92,8 +100,6 @@ model Category {
   Topic          Topic     @relation(fields: [topic_id], references: [topic_id])
   Post           Post[]
 }
-
-
 
 model Media {
   media_id    Int       @id @default(autoincrement())
@@ -138,12 +144,11 @@ model CommentLike {
   Comment         Comment   @relation(fields: [comment_id], references: [comment_id])
   User            Users      @relation(fields: [user_id], references: [user_id])
 }
+
 model Post {
   post_id      Int       @id @default(autoincrement())
   user_id      Int
   category_id  Int
-  title        String    @db.VarChar(255)
-  content      String    @db.Text
   type         PostType
   status       PostStatus @default(PUBLIC)
   views        Int        @default(0)
@@ -158,7 +163,45 @@ model Post {
   Like         Like[]
   PostTag      PostTag[]
   PostView     PostView[]
+  General      General?
+  Column       Column?
+  Question     Question?
 }
+
+model General {
+  general_id    Int       @id @default(autoincrement())
+  post_id       Int       @unique
+  title         String    @db.VarChar(255)
+  content       String    @db.Text
+  created_at    DateTime  @default(now()) @db.Timestamp
+  updated_at    DateTime? @db.Timestamp
+  deleted_at    DateTime? @db.Timestamp
+  Post          Post      @relation(fields: [post_id], references: [post_id])
+}
+
+model Column {
+  column_id     Int       @id @default(autoincrement())
+  post_id       Int       @unique
+  title         String    @db.VarChar(255)
+  content       String    @db.Text
+  created_at    DateTime  @default(now()) @db.Timestamp
+  updated_at    DateTime? @db.Timestamp
+  deleted_at    DateTime? @db.Timestamp
+  Post          Post      @relation(fields: [post_id], references: [post_id])
+}
+
+model Question {
+  question_id   Int       @id @default(autoincrement())
+  post_id       Int       @unique
+  title         String    @db.VarChar(255)
+  content       String    @db.Text
+  points        Int       @default(0)
+  created_at    DateTime  @default(now()) @db.Timestamp
+  updated_at    DateTime? @db.Timestamp
+  deleted_at    DateTime? @db.Timestamp
+  Post          Post      @relation(fields: [post_id], references: [post_id])
+}
+
 
 model Like {
   like_id     Int       @id @default(autoincrement())
