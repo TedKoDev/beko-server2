@@ -68,4 +68,14 @@ export class CommentsController {
   ) {
     return this.commentsService.remove(+id, req.user.userId, req.user.role);
   }
+
+  @Auth(['ANY'])
+  @Patch(':id/select-as-answer')
+  selectAsAnswer(
+    @Param('id') id: string,
+    @Req() req: { user: { userId: number } },
+  ) {
+    const userId = req.user.userId; // 인증된 사용자 정보를 가져옴
+    return this.commentsService.selectCommentAsAnswer(+id, userId); // commentId와 userId를 전달
+  }
 }

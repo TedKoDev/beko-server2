@@ -1,6 +1,7 @@
 // src/versions/v1/apis/posts/dto/update-post.dto.ts
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsInt,
   IsNumber,
   IsOptional,
@@ -25,6 +26,10 @@ export class UpdatePostDto {
   @IsOptional()
   @IsInt()
   points?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isAnswered?: boolean; // 새로운 필드 추가
 
   @IsNumber()
   @IsOptional()

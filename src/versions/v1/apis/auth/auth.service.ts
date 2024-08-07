@@ -6,8 +6,6 @@ import * as config from 'config';
 import { pbkdf2Sync } from 'crypto';
 import * as dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
-import { PointsService } from '../point/points.service'; // PointsService 경로 수정
-
 export const AUTH_SERVICE_TOKEN = 'AUTH_SERVICE_TOKEN';
 
 @Injectable()
@@ -15,7 +13,6 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-    private readonly pointsService: PointsService, // PointsService 주입
   ) {}
 
   // 회원가입
@@ -33,14 +30,18 @@ export class AuthService {
       },
     });
 
-    // 포인트 부여
-    await this.pointsService.create(user.user_id, {
-      pointsChange: 2000,
-      changeReason: 'Sign-up bonus',
+    // 포인트 추가
+    await this.prisma.point.create({
+      data: {
+        user_id: user.user_id,
+        points_change: 2000,
+        change_reason: 'New user registration',
+      },
     });
 
     return user;
   }
+
   // 로그인
   async loginUser(email: string, password: string) {
     const user = await this.prisma.users.findUnique({

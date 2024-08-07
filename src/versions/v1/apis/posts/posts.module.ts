@@ -1,13 +1,15 @@
 // src/posts/posts.module.ts
-import { PrismaService } from '@/prisma/postsql-prisma.service';
 import { Module } from '@nestjs/common';
-import { MediaModule } from '../media/media.module';
+import { MediaService } from '../media/media.service';
+
+import { PrismaService } from '@/prisma';
+import { PointsService } from '../point';
 import { PostsController } from './posts.controller';
 import { PostsService } from './posts.service';
 
 @Module({
-  imports: [MediaModule],
+  providers: [PostsService, MediaService, PrismaService, PointsService],
   controllers: [PostsController],
-  providers: [PostsService, PrismaService],
+  exports: [PostsService],
 })
 export class PostsModule {}

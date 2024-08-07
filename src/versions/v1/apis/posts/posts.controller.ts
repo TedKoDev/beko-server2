@@ -1,5 +1,5 @@
+// src/posts/posts.controller.ts
 import { Auth } from '@/decorators';
-import { ROLE } from '@/types/v1';
 import {
   Body,
   Controller,
@@ -12,6 +12,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
+import { PaginationQueryDto } from './dto/pagination-query.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostsService } from './posts.service';
 
@@ -32,40 +33,36 @@ export class PostsController {
     return this.postsService.create(userId, createPostDto); // userId를 전달
   }
 
-  // pagination 적용
   @Auth(['ANY'])
   @Get()
-  async findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-  ) {
-    return this.postsService.findAll({ page, limit });
+  async findAll(@Query() paginationQuery: PaginationQueryDto) {
+    return this.postsService.findAll(paginationQuery);
   }
 
   @Auth(['ANY'])
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    await this.postsService.incrementViewCount(+id);
-    return this.postsService.findOne(+id);
+  async findOne(@Param('id') id: number) {
+    await this.postsService.incrementViewCount(id);
+    return this.postsService.findOne(id);
   }
 
   @Auth(['ANY'])
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id') id: number,
     @Body() updatePostDto: UpdatePostDto,
-    @Req() req: { user: { userId: number; role: ROLE } },
+    @Req() req: { user: { userId: number; role: string } },
   ) {
     const userId = req.user.userId; // 인증된 사용자 정보를 가져옴
-    return this.postsService.update(+id, userId, updatePostDto);
+    return this.postsService.update(id, userId, updatePostDto);
   }
 
   @Auth(['ANY'])
   @Delete(':id')
   async remove(
-    @Param('id') id: string,
-    @Req() req: { user: { userId: number; role: ROLE } },
+    @Param('id') id: number,
+    @Req() req: { user: { userId: number; role: string } },
   ) {
-    return this.postsService.remove(+id, req.user.userId, req.user.role);
+    return this.postsService.remove(id, req.user.userId, req.user.role);
   }
 }

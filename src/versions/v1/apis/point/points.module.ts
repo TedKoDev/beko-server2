@@ -1,14 +1,10 @@
 // src/points/points.module.ts
-import { PrismaService } from '@/prisma/postsql-prisma.service';
-import { forwardRef, Module } from '@nestjs/common';
-import { AuthModule } from '../auth';
-import { PointsController } from './points.controller';
+import { PrismaService } from '@/prisma';
+import { Module } from '@nestjs/common';
 import { PointsService } from './points.service';
 
 @Module({
-  imports: [forwardRef(() => AuthModule)],
-  controllers: [PointsController],
-  exports: [PointsService],
   providers: [PointsService, PrismaService],
+  exports: [PointsService],
 })
 export class PointsModule {}

@@ -17,6 +17,7 @@ model Users {
   profile_picture_url String?          @db.VarChar(255)
   phone_number        String?          @db.VarChar(20)
   email_verification_token String?     @db.VarChar(255)
+  points              Int               @default(2000)
   is_email_verified   Boolean          @default(false)
   role                Role             @default(USER)
   account_status      AccountStatus    @default(ACTIVE)
@@ -125,6 +126,7 @@ model Comment {
   created_at       DateTime   @default(now()) @db.Timestamp
   updated_at       DateTime?  @db.Timestamp
   deleted_at       DateTime?  @db.Timestamp
+  isSelected       Boolean?   @default(false) // 답변으로 선택 여부
   Post             Post       @relation(fields: [post_id], references: [post_id])
   User             Users      @relation(fields: [user_id], references: [user_id])
   ParentComment    Comment?   @relation("CommentToComment", fields: [parent_comment_id], references: [comment_id])
@@ -153,6 +155,7 @@ model Post {
   status       PostStatus @default(PUBLIC)
   views        Int        @default(0)
   likes        Int        @default(0)
+  comments     Int        @default(0)
   created_at   DateTime   @default(now()) @db.Timestamp
   updated_at   DateTime?  @db.Timestamp
   deleted_at   DateTime?  @db.Timestamp
@@ -196,11 +199,13 @@ model Post_Question {
   title         String    @db.VarChar(255)
   content       String    @db.Text
   points        Int       @default(0)
+  isAnswered    Boolean   @default(false)  // 새로운 필드 추가
   created_at    DateTime  @default(now()) @db.Timestamp
   updated_at    DateTime? @db.Timestamp
   deleted_at    DateTime? @db.Timestamp
   Post          Post      @relation(fields: [post_id], references: [post_id])
 }
+
 
 
 model Like {
