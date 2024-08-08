@@ -1,5 +1,5 @@
 // src/posts/dto/create-post.dto.ts
-import { PostType } from '@prisma/client';
+import { postType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsInt,
@@ -29,7 +29,7 @@ export class CreatePostDto {
 
   @IsString()
   @IsNotEmpty()
-  type: PostType; // 타입은 enum으로 지정
+  type: postType; // 타입은 enum으로 지정
 
   @ValidateNested({ each: true })
   @IsOptional()

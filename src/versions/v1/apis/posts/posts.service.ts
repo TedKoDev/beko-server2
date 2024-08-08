@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PostType, Prisma } from '@prisma/client';
+import { postType, Prisma } from '@prisma/client';
 import { MediaService } from '../media';
 import { CreateMediaDto } from '../media/dto';
 import { PointsService } from '../point/points.service';
@@ -26,19 +26,19 @@ export class PostsService {
     // 포인트 차감 로직 생략...
 
     // 게시글 생성
-    const postCreateInput: Prisma.PostCreateInput = {
+    const postCreateInput: Prisma.postCreateInput = {
       type: createPostDto.type,
       status: isDraft ? 'DRAFT' : 'PUBLIC',
-      User: { connect: { user_id: userId } },
-      Category: { connect: { category_id: createPostDto.categoryId } },
+      user: { connect: { user_id: userId } },
+      category: { connect: { category_id: createPostDto.categoryId } },
     };
 
     const post = await this.prisma.post.create({ data: postCreateInput });
 
     // 게시글 유형별 데이터 생성
     switch (createPostDto.type) {
-      case PostType.GENERAL:
-        await this.prisma.post_General.create({
+      case postType.GENERAL:
+        await this.prisma.post_general.create({
           data: {
             post_id: post.post_id,
             title: createPostDto.title,
@@ -46,8 +46,8 @@ export class PostsService {
           },
         });
         break;
-      case PostType.COLUMN:
-        await this.prisma.post_Column.create({
+      case postType.COLUMN:
+        await this.prisma.post_column.create({
           data: {
             post_id: post.post_id,
             title: createPostDto.title,
@@ -55,8 +55,8 @@ export class PostsService {
           },
         });
         break;
-      case PostType.QUESTION:
-        await this.prisma.post_Question.create({
+      case postType.QUESTION:
+        await this.prisma.post_question.create({
           data: {
             post_id: post.post_id,
             title: createPostDto.title,
@@ -115,31 +115,31 @@ export class PostsService {
         status: 'DRAFT',
       },
       include: {
-        Post_General: true,
-        Post_Column: true,
-        Post_Question: true,
-        Media: true,
+        post_general: true,
+        post_column: true,
+        post_question: true,
+        media: true,
       },
     });
 
     const integratedDrafts = drafts.map((post) => {
       let post_content = {};
-      if (post.Post_General) {
+      if (post.post_general) {
         post_content = {
-          title: post.Post_General.title,
-          content: post.Post_General.content,
+          title: post.post_general.title,
+          content: post.post_general.content,
         };
-      } else if (post.Post_Column) {
+      } else if (post.post_column) {
         post_content = {
-          title: post.Post_Column.title,
-          content: post.Post_Column.content,
+          title: post.post_column.title,
+          content: post.post_column.content,
         };
-      } else if (post.Post_Question) {
+      } else if (post.post_question) {
         post_content = {
-          title: post.Post_Question.title,
-          content: post.Post_Question.content,
-          points: post.Post_Question.points,
-          isAnswered: post.Post_Question.isAnswered,
+          title: post.post_question.title,
+          content: post.post_question.content,
+          points: post.post_question.points,
+          isAnswered: post.post_question.isAnswered,
         };
       }
       return {
@@ -154,7 +154,7 @@ export class PostsService {
         updated_at: post.updated_at,
         deleted_at: post.deleted_at,
         post_content,
-        media: post.Media,
+        media: post.media,
       };
     });
 
@@ -165,7 +165,7 @@ export class PostsService {
   async update(id: number, userId: number, updatePostDto: UpdatePostDto) {
     const post = await this.prisma.post.findUnique({
       where: { post_id: id },
-      include: { User: true, Post_Question: true },
+      include: { user: true, post_question: true },
     });
 
     if (!post) {
@@ -183,14 +183,14 @@ export class PostsService {
       }
     }
 
-    if (post.Post_Question && post.Post_Question.isAnswered) {
+    if (post.post_question && post.post_question.isAnswered) {
       throw new BadRequestException(
         'Cannot update a post that has been answered',
       );
     }
 
     if (
-      updatePostDto.type === PostType.QUESTION &&
+      updatePostDto.type === postType.QUESTION &&
       updatePostDto.points !== undefined
     ) {
       const user = await this.prisma.users.findUnique({
@@ -201,7 +201,7 @@ export class PostsService {
         throw new NotFoundException('User not found');
       }
 
-      const existingPoints = post.Post_Question.points;
+      const existingPoints = post.post_question.points;
 
       if (user.points + existingPoints < updatePostDto.points) {
         throw new BadRequestException('Not enough points');
@@ -233,11 +233,11 @@ export class PostsService {
     }
 
     // 게시글 업데이트 입력 데이터 생성
-    const postUpdateInput: Prisma.PostUpdateInput = {
+    const postUpdateInput: Prisma.postUpdateInput = {
       type: updatePostDto.type
-        ? { set: updatePostDto.type as PostType }
+        ? { set: updatePostDto.type as postType }
         : undefined,
-      Category: updatePostDto.categoryId
+      category: updatePostDto.categoryId
         ? { connect: { category_id: updatePostDto.categoryId } }
         : undefined,
     };
@@ -250,8 +250,8 @@ export class PostsService {
 
     // 게시글 유형별 데이터 업데이트
     switch (updatePostDto.type) {
-      case PostType.GENERAL:
-        await this.prisma.post_General.update({
+      case postType.GENERAL:
+        await this.prisma.post_general.update({
           where: { post_id: id },
           data: {
             title: updatePostDto.title,
@@ -259,8 +259,8 @@ export class PostsService {
           },
         });
         break;
-      case PostType.COLUMN:
-        await this.prisma.post_Column.update({
+      case postType.COLUMN:
+        await this.prisma.post_column.update({
           where: { post_id: id },
           data: {
             title: updatePostDto.title,
@@ -268,8 +268,8 @@ export class PostsService {
           },
         });
         break;
-      case PostType.QUESTION:
-        await this.prisma.post_Question.update({
+      case postType.QUESTION:
+        await this.prisma.post_question.update({
           where: { post_id: id },
           data: {
             title: updatePostDto.title,
@@ -309,14 +309,14 @@ export class PostsService {
   async remove(postId: number, userId: number, userRole: string) {
     const post = await this.prisma.post.findUnique({
       where: { post_id: postId },
-      include: { Post_Question: true, Comment: true },
+      include: { post_question: true, comment: true },
     });
 
     if (!post) {
       throw new NotFoundException('Post not found');
     }
 
-    if (post.Post_Question && !post.Post_Question.isAnswered) {
+    if (post.post_question && !post.post_question.isAnswered) {
       throw new BadRequestException(
         'Cannot delete a question post before an answer is selected',
       );
@@ -329,14 +329,14 @@ export class PostsService {
     }
 
     // 포인트 반환 로직 추가 (질문 유형인 경우)
-    if (post.Post_Question) {
+    if (post.post_question) {
       await this.prisma.users.update({
         where: { user_id: post.user_id },
-        data: { points: { increment: post.Post_Question.points } },
+        data: { points: { increment: post.post_question.points } },
       });
 
       await this.pointsService.create(post.user_id, {
-        pointsChange: post.Post_Question.points,
+        pointsChange: post.post_question.points,
         changeReason: 'Question post deleted',
       });
     }
@@ -387,7 +387,7 @@ export class PostsService {
     const { page = 1, limit = 10, type, sort = 'latest' } = paginationQuery;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.PostWhereInput = {
+    const where: Prisma.postWhereInput = {
       status: 'PUBLIC',
       deleted_at: null,
     };
@@ -396,7 +396,7 @@ export class PostsService {
       where.type = type;
     }
 
-    const orderBy: Prisma.PostOrderByWithRelationInput[] = [];
+    const orderBy: Prisma.postOrderByWithRelationInput[] = [];
     if (sort === 'latest') {
       orderBy.push({ created_at: 'desc' });
     } else if (sort === 'oldest') {
@@ -411,11 +411,11 @@ export class PostsService {
         take: limit,
         orderBy,
         include: {
-          Post_General: true,
-          Post_Column: true,
-          Post_Question: true,
-          Media: true,
-          Comment: {
+          post_general: true,
+          post_column: true,
+          post_question: true,
+          media: true,
+          comment: {
             where: {
               deleted_at: null,
             },
@@ -436,22 +436,22 @@ export class PostsService {
     // 유형별 데이터를 post_content 필드로 통합하여 반환
     const integratedPosts = posts.map((post) => {
       let post_content = {};
-      if (post.Post_General) {
+      if (post.post_general) {
         post_content = {
-          title: post.Post_General.title,
-          content: post.Post_General.content,
+          title: post.post_general.title,
+          content: post.post_general.content,
         };
-      } else if (post.Post_Column) {
+      } else if (post.post_column) {
         post_content = {
-          title: post.Post_Column.title,
-          content: post.Post_Column.content,
+          title: post.post_column.title,
+          content: post.post_column.content,
         };
-      } else if (post.Post_Question) {
+      } else if (post.post_question) {
         post_content = {
-          title: post.Post_Question.title,
-          content: post.Post_Question.content,
-          points: post.Post_Question.points,
-          isAnswered: post.Post_Question.isAnswered,
+          title: post.post_question.title,
+          content: post.post_question.content,
+          points: post.post_question.points,
+          isAnswered: post.post_question.isAnswered,
         };
       }
       return {
@@ -466,8 +466,8 @@ export class PostsService {
         updated_at: post.updated_at,
         deleted_at: post.deleted_at,
         post_content,
-        media: post.Media,
-        comments: post.Comment,
+        media: post.media,
+        comments: post.comment,
       };
     });
 
@@ -488,15 +488,15 @@ export class PostsService {
         deleted_at: null,
       },
       include: {
-        Post_General: true,
-        Post_Column: true,
-        Post_Question: true,
-        Media: {
+        post_general: true,
+        post_column: true,
+        post_question: true,
+        media: {
           where: {
             deleted_at: null,
           },
         },
-        Comment: {
+        comment: {
           where: {
             deleted_at: null,
           },
@@ -510,22 +510,22 @@ export class PostsService {
     }
 
     let post_content = {};
-    if (post.Post_General) {
+    if (post.post_general) {
       post_content = {
-        title: post.Post_General.title,
-        content: post.Post_General.content,
+        title: post.post_general.title,
+        content: post.post_general.content,
       };
-    } else if (post.Post_Column) {
+    } else if (post.post_column) {
       post_content = {
-        title: post.Post_Column.title,
-        content: post.Post_Column.content,
+        title: post.post_column.title,
+        content: post.post_column.content,
       };
-    } else if (post.Post_Question) {
+    } else if (post.post_question) {
       post_content = {
-        title: post.Post_Question.title,
-        content: post.Post_Question.content,
-        points: post.Post_Question.points,
-        isAnswered: post.Post_Question.isAnswered,
+        title: post.post_question.title,
+        content: post.post_question.content,
+        points: post.post_question.points,
+        isAnswered: post.post_question.isAnswered,
       };
     }
 
@@ -541,8 +541,8 @@ export class PostsService {
       updated_at: post.updated_at,
       deleted_at: post.deleted_at,
       post_content,
-      media: post.Media,
-      comments: post.Comment,
+      media: post.media,
+      comments: post.comment,
     };
 
     return integratedPost;

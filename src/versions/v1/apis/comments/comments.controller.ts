@@ -25,62 +25,66 @@ export class CommentsController {
 
   @Auth(['ANY'])
   @Post()
-  create(
+  async create(
     @Body() createCommentDto: CreateCommentDto,
     @Req() req: { user: { userId: number } },
   ) {
-    const userId = req.user.userId; // 인증된 사용자 정보를 가져옴
-    return this.commentsService.create(userId, createCommentDto); // userId를 전달
+    const userId = req.user.userId;
+    return await this.commentsService.create(userId, createCommentDto);
   }
 
   @Auth(['ANY'])
   @Get()
-  findAll(@Query() paginationQuery: PaginationQueryDto) {
-    return this.commentsService.findAll(paginationQuery);
+  async findAll(@Query() paginationQuery: PaginationQueryDto) {
+    return await this.commentsService.findAll(paginationQuery);
   }
 
   @Auth(['ANY'])
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.commentsService.findOne(+id);
-  }
-
-  @Auth(['ANY'])
-  @Get(':id/replies')
-  findReplies(
-    @Param('id') id: string,
-    @Query() paginationQuery: PaginationQueryDto,
-  ) {
-    return this.commentsService.findReplies(+id, paginationQuery);
+  async findOne(@Param('id') id: string) {
+    return await this.commentsService.findOne(+id);
   }
 
   @Auth(['ANY'])
   @Patch(':id')
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updateCommentDto: UpdateCommentDto,
     @Req() req: { user: { userId: number; role: ROLE } },
   ) {
-    const userId = req.user.userId; // 인증된 사용자 정보를 가져옴
-    return this.commentsService.update(+id, userId, updateCommentDto);
+    const userId = req.user.userId;
+    return await this.commentsService.update(+id, userId, updateCommentDto);
   }
 
   @Auth(['ANY'])
   @Delete(':id')
-  remove(
+  async remove(
     @Param('id') id: string,
     @Req() req: { user: { userId: number; role: ROLE } },
   ) {
-    return this.commentsService.remove(+id, req.user.userId, req.user.role);
+    return await this.commentsService.remove(
+      +id,
+      req.user.userId,
+      req.user.role,
+    );
+  }
+
+  @Auth(['ANY'])
+  @Get(':id/replies')
+  async findReplies(
+    @Param('id') id: string,
+    @Query() paginationQuery: PaginationQueryDto,
+  ) {
+    return await this.commentsService.findReplies(+id, paginationQuery);
   }
 
   @Auth(['ANY'])
   @Patch(':id/select-as-answer')
-  selectAsAnswer(
+  async selectAsAnswer(
     @Param('id') id: string,
     @Req() req: { user: { userId: number } },
   ) {
-    const userId = req.user.userId; // 인증된 사용자 정보를 가져옴
-    return this.commentsService.selectCommentAsAnswer(+id, userId); // commentId와 userId를 전달
+    const userId = req.user.userId;
+    return await this.commentsService.selectCommentAsAnswer(+id, userId);
   }
 }

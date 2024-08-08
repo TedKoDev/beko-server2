@@ -9,7 +9,7 @@ generator client {
   previewFeatures = ["postgresqlExtensions"]
 }
 
-model Users {
+model users {
   user_id             Int              @id @default(autoincrement())
   username            String           @db.VarChar(50)
   email               String           @unique @db.VarChar(100)
@@ -17,61 +17,61 @@ model Users {
   profile_picture_url String?          @db.VarChar(255)
   phone_number        String?          @db.VarChar(20)
   email_verification_token String?     @db.VarChar(255)
-  points              Int               @default(2000)
-  level               Int               @default(1)
+  points              Int              @default(2000)
+  level               Int              @default(1)
   is_email_verified   Boolean          @default(false)
-  role                Role             @default(USER)
-  account_status      AccountStatus    @default(ACTIVE)
+  role                role             @default(USER)
+  account_status      accountStatus    @default(ACTIVE)
   sign_up_ip          String?          @db.VarChar(45)
   created_at          DateTime         @default(now()) @db.Timestamp
   last_login_at       DateTime?
   updated_at          DateTime?        @db.Timestamp
   deleted_at          DateTime?        @db.Timestamp
-  SocialLogin         SocialLogin[]
-  Point               Point[]
-  Post                Post[]
-  Comment             Comment[]
-  CommentLike         CommentLike[]
-  Like                Like[]
-  AdminAction         AdminAction[]
-  AuthCode            AuthCode[]
-  Following           Follow[] @relation("FollowingRelation")
-  Followers           Follow[] @relation("FollowerRelation")
+  social_login        socialLogin[]
+  point               point[]
+  post                post[]
+  comment             comment[]
+  comment_like        commentLike[]
+  like                like[]
+  admin_action        adminAction[]
+  auth_code           authCode[]
+  following           follow[] @relation("FollowingRelation")
+  followers           follow[] @relation("FollowerRelation")
 }
 
-model SocialLogin {
+model socialLogin {
   social_login_id  Int        @id @default(autoincrement())
   user_id          Int
-  provider         Provider
+  provider         provider
   provider_user_id String     @db.VarChar(255)
   created_at       DateTime   @default(now()) @db.Timestamp
   updated_at       DateTime?  @db.Timestamp
   deleted_at       DateTime?  @db.Timestamp
-  User             Users      @relation(fields: [user_id], references: [user_id])
+  user             users      @relation(fields: [user_id], references: [user_id])
 }
 
-model Follow {
+model follow {
   follow_id        Int      @id @default(autoincrement())
   follower_id      Int
   following_id     Int
   created_at       DateTime @default(now()) @db.Timestamp
   updated_at       DateTime? @db.Timestamp
   deleted_at       DateTime? @db.Timestamp
-  follower         Users    @relation("FollowingRelation", fields: [follower_id], references: [user_id])
-  following        Users    @relation("FollowerRelation", fields: [following_id], references: [user_id])
+  follower         users    @relation("FollowingRelation", fields: [follower_id], references: [user_id])
+  following        users    @relation("FollowerRelation", fields: [following_id], references: [user_id])
 }
 
-model AuthCode {
+model authCode {
   id          Int         @id @default(autoincrement())
   user_id     Int         @unique
   code        String      @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   keojak_code String      @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   expired_at  DateTime
   createdAt   DateTime    @default(now())
-  User        Users       @relation(fields: [user_id], references: [user_id])
+  user        users       @relation(fields: [user_id], references: [user_id])
 }
 
-model Point {
+model point {
   point_id      Int       @id @default(autoincrement())
   user_id       Int
   points_change Int
@@ -80,63 +80,63 @@ model Point {
   created_at    DateTime  @default(now()) @db.Timestamp
   updated_at    DateTime? @db.Timestamp
   deleted_at    DateTime? @db.Timestamp
-  User          Users      @relation(fields: [user_id], references: [user_id])
+  user          users     @relation(fields: [user_id], references: [user_id])
 }
 
-model Topic {
+model topic {
   topic_id    Int       @id @default(autoincrement())
   title       String    @db.VarChar(255)
   created_at  DateTime  @default(now()) @db.Timestamp
   updated_at  DateTime? @db.Timestamp
   deleted_at  DateTime? @db.Timestamp
-  Category    Category[]
+  category    category[]
 }
 
-model Category {
+model category {
   category_id    Int       @id @default(autoincrement())
   topic_id       Int
   category_name  String    @db.VarChar(100)
   created_at     DateTime  @default(now()) @db.Timestamp
   updated_at     DateTime? @db.Timestamp
   deleted_at     DateTime? @db.Timestamp
-  Topic          Topic     @relation(fields: [topic_id], references: [topic_id])
-  Post           Post[]
+  topic          topic     @relation(fields: [topic_id], references: [topic_id])
+  post           post[]
 }
 
-model Media {
+model media {
   media_id    Int       @id @default(autoincrement())
   post_id     Int?
   comment_id  Int?
-  media_type  MediaType
+  media_type  mediaType
   media_url   String    @db.VarChar(255)
   created_at  DateTime  @default(now()) @db.Timestamp
   updated_at  DateTime? @db.Timestamp
   deleted_at  DateTime? @db.Timestamp
-  Post        Post?     @relation(fields: [post_id], references: [post_id])
-  Comment     Comment?  @relation(fields: [comment_id], references: [comment_id])
+  post        post?     @relation(fields: [post_id], references: [post_id])
+  comment     comment?  @relation(fields: [comment_id], references: [comment_id])
 }
 
-model Comment {
+model comment {
   comment_id       Int       @id @default(autoincrement())
   post_id          Int
   user_id          Int
   content          String    @db.Text
   parent_comment_id Int?
-  status           CommentStatus @default(PUBLIC)
+  status           commentStatus @default(PUBLIC)
   likes            Int        @default(0)
   created_at       DateTime   @default(now()) @db.Timestamp
   updated_at       DateTime?  @db.Timestamp
   deleted_at       DateTime?  @db.Timestamp
   isSelected       Boolean?   @default(false) // 답변으로 선택 여부
-  Post             Post       @relation(fields: [post_id], references: [post_id])
-  User             Users      @relation(fields: [user_id], references: [user_id])
-  ParentComment    Comment?   @relation("CommentToComment", fields: [parent_comment_id], references: [comment_id])
-  ChildComments    Comment[]  @relation("CommentToComment")
-  CommentLike      CommentLike[]
-  Media            Media[]    
+  post             post       @relation(fields: [post_id], references: [post_id])
+  user             users      @relation(fields: [user_id], references: [user_id])
+  parentComment    comment?   @relation("CommentToComment", fields: [parent_comment_id], references: [comment_id])
+  childComments    comment[]  @relation("CommentToComment")
+  commentLike      commentLike[]
+  media            media[]    
 }
 
-model CommentLike {
+model commentLike {
   comment_like_id Int       @id @default(autoincrement())
   comment_id      Int
   user_id         Int
@@ -144,35 +144,35 @@ model CommentLike {
   created_at      DateTime  @default(now()) @db.Timestamp
   updated_at      DateTime? @db.Timestamp
   deleted_at      DateTime? @db.Timestamp
-  Comment         Comment   @relation(fields: [comment_id], references: [comment_id])
-  User            Users      @relation(fields: [user_id], references: [user_id])
+  comment         comment   @relation(fields: [comment_id], references: [comment_id])
+  user            users     @relation(fields: [user_id], references: [user_id])
 }
 
-model Post {
+model post {
   post_id      Int       @id @default(autoincrement())
   user_id      Int
   category_id  Int
-  type         PostType
-  status       PostStatus @default(PUBLIC)
+  type         postType
+  status       postStatus @default(PUBLIC)
   views        Int        @default(0)
   likes        Int        @default(0)
   comments     Int        @default(0)
   created_at   DateTime   @default(now()) @db.Timestamp
   updated_at   DateTime?  @db.Timestamp
   deleted_at   DateTime?  @db.Timestamp
-  User         Users       @relation(fields: [user_id], references: [user_id])
-  Category     Category   @relation(fields: [category_id], references: [category_id])
-  Media        Media[]
-  Comment      Comment[]
-  Like         Like[]
-  PostTag      PostTag[]
-  PostView     PostView[]
-  Post_General      Post_General?
-  Post_Column       Post_Column?
-  Post_Question     Post_Question?
+  user         users      @relation(fields: [user_id], references: [user_id])
+  category     category   @relation(fields: [category_id], references: [category_id])
+  media        media[]
+  comment      comment[]
+  like         like[]
+  postTag      postTag[]
+  postView     postView[]
+  post_general post_general?
+  post_column  post_column?
+  post_question post_question?
 }
 
-model Post_General {
+model post_general {
   general_id    Int       @id @default(autoincrement())
   post_id       Int       @unique
   title         String    @db.VarChar(255)
@@ -180,10 +180,10 @@ model Post_General {
   created_at    DateTime  @default(now()) @db.Timestamp
   updated_at    DateTime? @db.Timestamp
   deleted_at    DateTime? @db.Timestamp
-  Post          Post      @relation(fields: [post_id], references: [post_id])
+  post          post      @relation(fields: [post_id], references: [post_id])
 }
 
-model Post_Column {
+model post_column {
   column_id     Int       @id @default(autoincrement())
   post_id       Int       @unique
   title         String    @db.VarChar(255)
@@ -191,10 +191,10 @@ model Post_Column {
   created_at    DateTime  @default(now()) @db.Timestamp
   updated_at    DateTime? @db.Timestamp
   deleted_at    DateTime? @db.Timestamp
-  Post          Post      @relation(fields: [post_id], references: [post_id])
+  post          post      @relation(fields: [post_id], references: [post_id])
 }
 
-model Post_Question {
+model post_question {
   question_id   Int       @id @default(autoincrement())
   post_id       Int       @unique
   title         String    @db.VarChar(255)
@@ -204,23 +204,21 @@ model Post_Question {
   created_at    DateTime  @default(now()) @db.Timestamp
   updated_at    DateTime? @db.Timestamp
   deleted_at    DateTime? @db.Timestamp
-  Post          Post      @relation(fields: [post_id], references: [post_id])
+  post          post      @relation(fields: [post_id], references: [post_id])
 }
 
-
-
-model Like {
+model like {
   like_id     Int       @id @default(autoincrement())
   post_id     Int
   user_id     Int
   created_at  DateTime  @default(now()) @db.Timestamp
   updated_at  DateTime? @db.Timestamp
   deleted_at  DateTime? @db.Timestamp
-  Post        Post      @relation(fields: [post_id], references: [post_id])
-  User        Users      @relation(fields: [user_id], references: [user_id])
+  post        post      @relation(fields: [post_id], references: [post_id])
+  user        users     @relation(fields: [user_id], references: [user_id])
 }
 
-model Tag {
+model tag {
   tag_id        Int       @id @default(autoincrement())
   tag_name      String    @unique @db.VarChar(100)
   is_admin_tag  Boolean   @default(false)
@@ -228,21 +226,21 @@ model Tag {
   created_at    DateTime  @default(now()) @db.Timestamp
   updated_at    DateTime? @db.Timestamp
   deleted_at    DateTime? @db.Timestamp
-  PostTag       PostTag[]
+  postTag       postTag[]
 }
 
-model PostTag {
+model postTag {
   post_tag_id  Int       @id @default(autoincrement())
   post_id      Int
   tag_id       Int
   created_at   DateTime  @default(now()) @db.Timestamp
   updated_at   DateTime? @db.Timestamp
   deleted_at   DateTime? @db.Timestamp
-  Post         Post      @relation(fields: [post_id], references: [post_id])
-  Tag          Tag       @relation(fields: [tag_id], references: [tag_id])
+  post         post      @relation(fields: [post_id], references: [post_id])
+  tag          tag       @relation(fields: [tag_id], references: [tag_id])
 }
 
-model PostView {
+model postView {
   post_view_id  Int       @id @default(autoincrement())
   post_id       Int
   ip_address    String    @db.VarChar(45)
@@ -250,32 +248,32 @@ model PostView {
   created_at    DateTime  @default(now()) @db.Timestamp
   updated_at    DateTime? @db.Timestamp
   deleted_at    DateTime? @db.Timestamp
-  Post          Post      @relation(fields: [post_id], references: [post_id])
+  post          post      @relation(fields: [post_id], references: [post_id])
 }
 
-model AdminAction {
+model adminAction {
   action_id       Int       @id @default(autoincrement())
   admin_user_id   Int
-  target_type     TargetType
+  target_type     targetType
   target_id       Int
-  action_type     ActionType
+  action_type     actionType
   reason          String?   @db.Text
   action_timestamp DateTime @default(now()) @db.Timestamp
-  AdminUser       Users      @relation(fields: [admin_user_id], references: [user_id])
+  adminUser       users     @relation(fields: [admin_user_id], references: [user_id])
 }
 
-enum Role {
+enum role {
   USER
   ADMIN
 }
 
-enum AccountStatus {
+enum accountStatus {
   ACTIVE
   INACTIVE
   SUSPENDED
 }
 
-enum Provider {
+enum provider {
   GOOGLE
   FACEBOOK
   TWITTER
@@ -283,38 +281,38 @@ enum Provider {
   GITHUB
 }
 
-enum PostType {
+enum postType {
   GENERAL
   COLUMN
   QUESTION
 }
 
-enum SortType {
+enum sortType {
   LATEST
   POPULAR
 }
 
-enum PostStatus {
+enum postStatus {
   PUBLIC
   DRAFT
   DELETED
 }
 
-enum MediaType {
+enum mediaType {
   IMAGE
   VIDEO
 }
 
-enum CommentStatus {
+enum commentStatus {
   PUBLIC
   DELETED
 }
 
-enum TargetType {
+enum targetType {
   POST
   COMMENT
 }
 
-enum ActionType {
+enum actionType {
   DELETE
 }

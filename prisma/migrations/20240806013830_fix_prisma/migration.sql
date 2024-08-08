@@ -1,14 +1,14 @@
 /*
   Warnings:
 
-  - The values [EDITOR] on the enum `PostType` will be removed. If these variants are still used in the database, this will fail.
+  - The values [EDITOR] on the enum `postType` will be removed. If these variants are still used in the database, this will fail.
 
 */
 -- AlterEnum
 BEGIN;
-CREATE TYPE "PostType_new" AS ENUM ('GENERAL', 'COLUMN', 'QUESTION');
-ALTER TABLE "Post" ALTER COLUMN "type" TYPE "PostType_new" USING ("type"::text::"PostType_new");
-ALTER TYPE "PostType" RENAME TO "PostType_old";
-ALTER TYPE "PostType_new" RENAME TO "PostType";
-DROP TYPE "PostType_old";
+CREATE TYPE "postType_new" AS ENUM ('GENERAL', 'COLUMN', 'QUESTION');
+ALTER TABLE "Post" ALTER COLUMN "type" TYPE "postType_new" USING ("type"::text::"postType_new");
+ALTER TYPE "postType" RENAME TO "postType_old";
+ALTER TYPE "postType_new" RENAME TO "postType";
+DROP TYPE "postType_old";
 COMMIT;

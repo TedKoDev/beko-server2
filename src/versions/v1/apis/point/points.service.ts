@@ -19,24 +19,17 @@ export class PointsService {
   }
 
   async findAll(userId: number, paginationQuery: PaginationQueryDto) {
-    const { page, limit } = paginationQuery;
+    const { page = 1, limit = 10 } = paginationQuery;
     const skip = (page - 1) * limit;
 
     const [points, totalCount] = await Promise.all([
       this.prisma.point.findMany({
-        where: {
-          user_id: userId,
-          deleted_at: null,
-        },
+        where: { user_id: userId },
         skip,
         take: limit,
+        orderBy: { created_at: 'desc' },
       }),
-      this.prisma.point.count({
-        where: {
-          user_id: userId,
-          deleted_at: null,
-        },
-      }),
+      this.prisma.point.count({ where: { user_id: userId } }),
     ]);
 
     return {

@@ -11,7 +11,7 @@ CREATE TYPE "AccountStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'SUSPENDED');
 CREATE TYPE "Provider" AS ENUM ('GOOGLE', 'FACEBOOK', 'TWITTER', 'LINKEDIN', 'GITHUB');
 
 -- CreateEnum
-CREATE TYPE "PostType" AS ENUM ('GENERAL', 'EDITOR');
+CREATE TYPE "postType" AS ENUM ('GENERAL', 'EDITOR');
 
 -- CreateEnum
 CREATE TYPE "PostStatus" AS ENUM ('PUBLIC', 'DRAFT', 'DELETED');
@@ -95,7 +95,7 @@ CREATE TABLE "Post" (
     "category_id" INTEGER NOT NULL,
     "title" VARCHAR(255) NOT NULL,
     "content" TEXT NOT NULL,
-    "type" "PostType" NOT NULL,
+    "type" "postType" NOT NULL,
     "status" "PostStatus" NOT NULL DEFAULT 'PUBLIC',
     "views" INTEGER NOT NULL DEFAULT 0,
     "likes" INTEGER NOT NULL DEFAULT 0,
