@@ -1,4 +1,3 @@
-// src/comments/comments.controller.ts
 import { Auth } from '@/decorators';
 import { ROLE } from '@/types/v1';
 import {
@@ -14,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { PaginationQueryDto } from './dto/pagination-query.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 
 @Controller({
@@ -35,18 +35,23 @@ export class CommentsController {
 
   @Auth(['ANY'])
   @Get()
-  findAll(
-    @Query('postId') postId: string,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-  ) {
-    return this.commentsService.findAll(+postId, { page, limit });
+  findAll(@Query() paginationQuery: PaginationQueryDto) {
+    return this.commentsService.findAll(paginationQuery);
   }
 
   @Auth(['ANY'])
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.commentsService.findOne(+id);
+  }
+
+  @Auth(['ANY'])
+  @Get(':id/replies')
+  findReplies(
+    @Param('id') id: string,
+    @Query() paginationQuery: PaginationQueryDto,
+  ) {
+    return this.commentsService.findReplies(+id, paginationQuery);
   }
 
   @Auth(['ANY'])

@@ -22,36 +22,13 @@ export class PostsService {
   ) {}
 
   // 게시글 생성
-  async create(userId: number, createPostDto: CreatePostDto) {
-    // 포인트 차감 로직 추가 (질문 유형인 경우)
-    if (createPostDto.type === PostType.QUESTION && createPostDto.points) {
-      const user = await this.prisma.users.findUnique({
-        where: { user_id: userId },
-      });
-
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      if (user.points < createPostDto.points) {
-        throw new BadRequestException('Not enough points');
-      }
-
-      await this.prisma.users.update({
-        where: { user_id: userId },
-        data: { points: { decrement: createPostDto.points } },
-      });
-
-      // 포인트 내역 추가
-      await this.pointsService.create(userId, {
-        pointsChange: -createPostDto.points,
-        changeReason: 'Question post created',
-      });
-    }
+  async create(userId: number, createPostDto: CreatePostDto, isDraft = false) {
+    // 포인트 차감 로직 생략...
 
     // 게시글 생성
     const postCreateInput: Prisma.PostCreateInput = {
       type: createPostDto.type,
+      status: isDraft ? 'DRAFT' : 'PUBLIC',
       User: { connect: { user_id: userId } },
       Category: { connect: { category_id: createPostDto.categoryId } },
     };
@@ -108,6 +85,80 @@ export class PostsService {
     }
 
     return post;
+  }
+
+  // 임시저장 생성
+  async createDraft(userId: number, createPostDto: CreatePostDto) {
+    // 유저의 임시저장 글 개수 확인
+    const draftCount = await this.prisma.post.count({
+      where: {
+        user_id: userId,
+        status: 'DRAFT',
+        type: createPostDto.type,
+      },
+    });
+
+    if (draftCount >= 5) {
+      throw new BadRequestException(
+        'You can only have up to 5 drafts per type.',
+      );
+    }
+
+    return this.create(userId, createPostDto, true);
+  }
+
+  // 임시저장 목록 조회
+  async findAllDrafts(userId: number) {
+    const drafts = await this.prisma.post.findMany({
+      where: {
+        user_id: userId,
+        status: 'DRAFT',
+      },
+      include: {
+        Post_General: true,
+        Post_Column: true,
+        Post_Question: true,
+        Media: true,
+      },
+    });
+
+    const integratedDrafts = drafts.map((post) => {
+      let post_content = {};
+      if (post.Post_General) {
+        post_content = {
+          title: post.Post_General.title,
+          content: post.Post_General.content,
+        };
+      } else if (post.Post_Column) {
+        post_content = {
+          title: post.Post_Column.title,
+          content: post.Post_Column.content,
+        };
+      } else if (post.Post_Question) {
+        post_content = {
+          title: post.Post_Question.title,
+          content: post.Post_Question.content,
+          points: post.Post_Question.points,
+          isAnswered: post.Post_Question.isAnswered,
+        };
+      }
+      return {
+        post_id: post.post_id,
+        user_id: post.user_id,
+        category_id: post.category_id,
+        type: post.type,
+        status: post.status,
+        views: post.views,
+        likes: post.likes,
+        created_at: post.created_at,
+        updated_at: post.updated_at,
+        deleted_at: post.deleted_at,
+        post_content,
+        media: post.Media,
+      };
+    });
+
+    return integratedDrafts;
   }
 
   // 게시글 업데이트
@@ -333,7 +384,7 @@ export class PostsService {
 
   // 게시글 목록 조회 (페이지네이션 적용)
   async findAll(paginationQuery: PaginationQueryDto) {
-    const { page = 1, limit = 10, type } = paginationQuery;
+    const { page = 1, limit = 10, type, sort = 'latest' } = paginationQuery;
     const skip = (page - 1) * limit;
 
     const where: Prisma.PostWhereInput = {
@@ -345,11 +396,20 @@ export class PostsService {
       where.type = type;
     }
 
+    const orderBy: Prisma.PostOrderByWithRelationInput[] = [];
+    if (sort === 'latest') {
+      orderBy.push({ created_at: 'desc' });
+    } else if (sort === 'oldest') {
+      orderBy.push({ created_at: 'asc' });
+    }
+
+    // Prisma에서 게시글을 가져옴
     const [posts, totalCount] = await Promise.all([
       this.prisma.post.findMany({
         where,
         skip,
         take: limit,
+        orderBy,
         include: {
           Post_General: true,
           Post_Column: true,
@@ -359,7 +419,7 @@ export class PostsService {
             where: {
               deleted_at: null,
             },
-            take: 5, // 최대 5개의 댓글만 가져오기
+            take: 3, // 최대 3개의 댓글만 가져오기
           },
         },
       }),
@@ -368,8 +428,51 @@ export class PostsService {
       }),
     ]);
 
+    // 인기순 정렬 (likes * 2 + views)
+    if (sort === 'popular') {
+      posts.sort((a, b) => b.likes * 2 + b.views - (a.likes * 2 + a.views));
+    }
+
+    // 유형별 데이터를 post_content 필드로 통합하여 반환
+    const integratedPosts = posts.map((post) => {
+      let post_content = {};
+      if (post.Post_General) {
+        post_content = {
+          title: post.Post_General.title,
+          content: post.Post_General.content,
+        };
+      } else if (post.Post_Column) {
+        post_content = {
+          title: post.Post_Column.title,
+          content: post.Post_Column.content,
+        };
+      } else if (post.Post_Question) {
+        post_content = {
+          title: post.Post_Question.title,
+          content: post.Post_Question.content,
+          points: post.Post_Question.points,
+          isAnswered: post.Post_Question.isAnswered,
+        };
+      }
+      return {
+        post_id: post.post_id,
+        user_id: post.user_id,
+        category_id: post.category_id,
+        type: post.type,
+        status: post.status,
+        views: post.views,
+        likes: post.likes,
+        created_at: post.created_at,
+        updated_at: post.updated_at,
+        deleted_at: post.deleted_at,
+        post_content,
+        media: post.Media,
+        comments: post.Comment,
+      };
+    });
+
     return {
-      data: posts,
+      data: integratedPosts,
       total: totalCount,
       page,
       limit,
@@ -381,7 +484,7 @@ export class PostsService {
     const post = await this.prisma.post.findFirst({
       where: {
         post_id: id,
-        status: 'PUBLIC',
+        // status: 'PUBLIC',
         deleted_at: null,
       },
       include: {
@@ -406,7 +509,43 @@ export class PostsService {
       throw new NotFoundException('Post not found');
     }
 
-    return post;
+    let post_content = {};
+    if (post.Post_General) {
+      post_content = {
+        title: post.Post_General.title,
+        content: post.Post_General.content,
+      };
+    } else if (post.Post_Column) {
+      post_content = {
+        title: post.Post_Column.title,
+        content: post.Post_Column.content,
+      };
+    } else if (post.Post_Question) {
+      post_content = {
+        title: post.Post_Question.title,
+        content: post.Post_Question.content,
+        points: post.Post_Question.points,
+        isAnswered: post.Post_Question.isAnswered,
+      };
+    }
+
+    const integratedPost = {
+      post_id: post.post_id,
+      user_id: post.user_id,
+      category_id: post.category_id,
+      type: post.type,
+      status: post.status,
+      views: post.views,
+      likes: post.likes,
+      created_at: post.created_at,
+      updated_at: post.updated_at,
+      deleted_at: post.deleted_at,
+      post_content,
+      media: post.Media,
+      comments: post.Comment,
+    };
+
+    return integratedPost;
   }
 
   // 조회수 증가

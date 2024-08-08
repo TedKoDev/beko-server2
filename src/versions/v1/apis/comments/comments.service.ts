@@ -10,6 +10,7 @@ import { CreateMediaDto } from '../media/dto';
 import { MediaService } from '../media/media.service';
 import { PointsService } from '../point/points.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { PaginationQueryDto } from './dto/pagination-query.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 
 @Injectable()
@@ -20,14 +21,7 @@ export class CommentsService {
     private pointsService: PointsService,
   ) {}
 
-  /**
-   * 댓글 생성 메서드
-   * @param userId 사용자 ID
-   * @param createCommentDto 댓글 생성 DTO
-   * @returns 생성된 댓글
-   */
   async create(userId: number, createCommentDto: CreateCommentDto) {
-    // 댓글 생성
     const comment = await this.prisma.comment.create({
       data: {
         post_id: createCommentDto.postId,
@@ -37,13 +31,11 @@ export class CommentsService {
       },
     });
 
-    // 댓글 생성 시 post 테이블의 comments 필드 증가
     await this.prisma.post.update({
       where: { post_id: createCommentDto.postId },
       data: { comments: { increment: 1 } },
     });
 
-    // 미디어 생성
     if (createCommentDto.media && createCommentDto.media.length > 0) {
       const mediaData = createCommentDto.media.map((media) => ({
         ...media,
@@ -55,22 +47,22 @@ export class CommentsService {
     return comment;
   }
 
-  /**
-   * 댓글 목록 조회 메서드
-   * @param postId 게시글 ID
-   * @param paginationQuery 페이지네이션 정보
-   * @returns 댓글 목록 및 페이지네이션 정보
-   */
-  async findAll(
-    postId: number,
-    paginationQuery: { page: number; limit: number },
-  ) {
-    const { page, limit } = paginationQuery;
+  async findAll(paginationQuery: PaginationQueryDto) {
+    const { page = 1, limit = 10, sort = 'latest', postId } = paginationQuery;
     const skip = (page - 1) * limit;
+
+    const orderBy = [];
+    if (sort === 'latest') {
+      orderBy.push({ created_at: 'desc' });
+    } else if (sort === 'oldest') {
+      orderBy.push({ created_at: 'asc' });
+    } else if (sort === 'popular') {
+      orderBy.push({ likes: 'desc' });
+    }
 
     const [comments, totalCount] = await Promise.all([
       this.prisma.comment.findMany({
-        where: { post_id: postId, deleted_at: null },
+        where: { post_id: postId, deleted_at: null, parent_comment_id: null },
         include: {
           Media: true,
           User: {
@@ -79,28 +71,69 @@ export class CommentsService {
               profile_picture_url: true,
             },
           },
+          ChildComments: {
+            where: { deleted_at: null },
+            take: 3,
+            orderBy: { created_at: 'desc' },
+            include: {
+              Media: true,
+              User: {
+                select: {
+                  username: true,
+                  profile_picture_url: true,
+                },
+              },
+            },
+          },
         },
         skip,
         take: limit,
+        orderBy,
       }),
       this.prisma.comment.count({
-        where: { post_id: postId, deleted_at: null },
+        where: { post_id: postId, deleted_at: null, parent_comment_id: null },
       }),
     ]);
 
+    const transformedComments = comments.map((comment) => ({
+      comment_id: comment.comment_id,
+      post_id: comment.post_id,
+      user_id: comment.user_id,
+      content: comment.content,
+      parent_comment_id: comment.parent_comment_id,
+      status: comment.status,
+      likes: comment.likes,
+      created_at: comment.created_at,
+      updated_at: comment.updated_at,
+      deleted_at: comment.deleted_at,
+      isSelected: comment.isSelected,
+      media: comment.Media,
+      user: comment.User,
+      childComments: comment.ChildComments.map((childComment) => ({
+        comment_id: childComment.comment_id,
+        post_id: childComment.post_id,
+        user_id: childComment.user_id,
+        content: childComment.content,
+        parent_comment_id: childComment.parent_comment_id,
+        status: childComment.status,
+        likes: childComment.likes,
+        created_at: childComment.created_at,
+        updated_at: childComment.updated_at,
+        deleted_at: childComment.deleted_at,
+        isSelected: childComment.isSelected,
+        media: childComment.Media,
+        user: childComment.User,
+      })),
+    }));
+
     return {
-      data: comments,
+      data: transformedComments,
       total: totalCount,
       page,
       limit,
     };
   }
 
-  /**
-   * 특정 댓글 조회 메서드
-   * @param id 댓글 ID
-   * @returns 조회된 댓글
-   */
   async findOne(id: number) {
     const comment = await this.prisma.comment.findUnique({
       where: { comment_id: id, deleted_at: null },
@@ -112,6 +145,20 @@ export class CommentsService {
             profile_picture_url: true,
           },
         },
+        ChildComments: {
+          where: { deleted_at: null },
+          take: 3,
+          orderBy: { created_at: 'desc' },
+          include: {
+            Media: true,
+            User: {
+              select: {
+                username: true,
+                profile_picture_url: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -119,18 +166,90 @@ export class CommentsService {
       throw new NotFoundException('Comment not found');
     }
 
-    return comment;
+    const transformedComment = {
+      comment_id: comment.comment_id,
+      post_id: comment.post_id,
+      user_id: comment.user_id,
+      content: comment.content,
+      parent_comment_id: comment.parent_comment_id,
+      status: comment.status,
+      likes: comment.likes,
+      created_at: comment.created_at,
+      updated_at: comment.updated_at,
+      deleted_at: comment.deleted_at,
+      isSelected: comment.isSelected,
+      media: comment.Media,
+      user: comment.User,
+      childComments: comment.ChildComments.map((childComment) => ({
+        comment_id: childComment.comment_id,
+        post_id: childComment.post_id,
+        user_id: childComment.user_id,
+        content: childComment.content,
+        parent_comment_id: childComment.parent_comment_id,
+        status: childComment.status,
+        likes: childComment.likes,
+        created_at: childComment.created_at,
+        updated_at: childComment.updated_at,
+        deleted_at: childComment.deleted_at,
+        isSelected: childComment.isSelected,
+        media: childComment.Media,
+        user: childComment.User,
+      })),
+    };
+
+    return transformedComment;
   }
 
-  /**
-   * 댓글 수정 메서드
-   * @param id 댓글 ID
-   * @param userId 사용자 ID
-   * @param updateCommentDto 댓글 수정 DTO
-   * @returns 수정된 댓글
-   */
+  async findReplies(commentId: number, paginationQuery: PaginationQueryDto) {
+    const { page = 1, limit = 10 } = paginationQuery;
+    const skip = (page - 1) * limit;
+
+    const [replies, totalCount] = await Promise.all([
+      this.prisma.comment.findMany({
+        where: { parent_comment_id: commentId, deleted_at: null },
+        include: {
+          Media: true,
+          User: {
+            select: {
+              username: true,
+              profile_picture_url: true,
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+      }),
+      this.prisma.comment.count({
+        where: { parent_comment_id: commentId, deleted_at: null },
+      }),
+    ]);
+
+    const transformedReplies = replies.map((reply) => ({
+      comment_id: reply.comment_id,
+      post_id: reply.post_id,
+      user_id: reply.user_id,
+      content: reply.content,
+      parent_comment_id: reply.parent_comment_id,
+      status: reply.status,
+      likes: reply.likes,
+      created_at: reply.created_at,
+      updated_at: reply.updated_at,
+      deleted_at: reply.deleted_at,
+      isSelected: reply.isSelected,
+      media: reply.Media,
+      user: reply.User,
+    }));
+
+    return {
+      data: transformedReplies,
+      total: totalCount,
+      page,
+      limit,
+    };
+  }
+
   async update(id: number, userId: number, updateCommentDto: UpdateCommentDto) {
-    // 댓글 존재 여부 확인
     const comment = await this.prisma.comment.findUnique({
       where: { comment_id: id, deleted_at: null },
     });
@@ -139,7 +258,6 @@ export class CommentsService {
       throw new ForbiddenException('Comment not found');
     }
 
-    // 댓글 작성자 또는 관리자 여부 확인
     if (comment.user_id !== userId) {
       const user = await this.prisma.users.findUnique({
         where: { user_id: userId },
@@ -151,7 +269,6 @@ export class CommentsService {
       }
     }
 
-    // 댓글 수정
     const updatedComment = await this.prisma.comment.update({
       where: { comment_id: id },
       data: {
@@ -160,10 +277,8 @@ export class CommentsService {
       },
     });
 
-    // 기존 미디어 삭제
     await this.mediaService.deleteMediaByCommentId(updatedComment.comment_id);
 
-    // 새로운 미디어 추가
     if (updateCommentDto.media && updateCommentDto.media.length > 0) {
       const newMedia = updateCommentDto.media.map((media) => ({
         ...media,
@@ -175,15 +290,7 @@ export class CommentsService {
     return updatedComment;
   }
 
-  /**
-   * 댓글 삭제 메서드
-   * @param id 댓글 ID
-   * @param userId 사용자 ID
-   * @param userRole 사용자 역할
-   * @returns 삭제된 댓글
-   */
   async remove(id: number, userId: number, userRole: ROLE) {
-    // 댓글 존재 여부 확인
     const comment = await this.prisma.comment.findUnique({
       where: { comment_id: id, deleted_at: null },
     });
@@ -192,30 +299,25 @@ export class CommentsService {
       throw new ForbiddenException('Comment not found');
     }
 
-    // 답변으로 선택된 댓글인 경우 관리자만 삭제 가능
     if (comment.isSelected && userRole !== ROLE.ADMIN) {
       throw new ForbiddenException(
         'You do not have permission to delete a selected answer',
       );
     }
 
-    // 댓글 작성자 또는 관리자 여부 확인
     if (comment.user_id !== userId && userRole !== ROLE.ADMIN) {
       throw new ForbiddenException(
         'You do not have permission to delete this comment',
       );
     }
 
-    // 기존 미디어 삭제
     await this.mediaService.deleteMediaByCommentId(comment.comment_id);
 
-    // 댓글 삭제 시 post 테이블의 comments 필드 감소
     await this.prisma.post.update({
       where: { post_id: comment.post_id },
       data: { comments: { decrement: 1 } },
     });
 
-    // 댓글 삭제
     return this.prisma.comment.update({
       where: { comment_id: id },
       data: {
@@ -225,12 +327,6 @@ export class CommentsService {
     });
   }
 
-  /**
-   * 댓글을 답변으로 선택 메서드
-   * @param commentId 댓글 ID
-   * @param userId 사용자 ID
-   * @returns 답변 선택 결과
-   */
   async selectCommentAsAnswer(commentId: number, userId: number) {
     // 답변을 선택한 댓글 가져오기
     const comment = await this.prisma.comment.findUnique({
@@ -242,6 +338,11 @@ export class CommentsService {
 
     if (!comment) {
       throw new NotFoundException('Comment not found');
+    }
+
+    // 대댓글인 경우 선택되지 않도록 처리
+    if (comment.parent_comment_id !== null) {
+      throw new BadRequestException('Cannot select a reply as an answer');
     }
 
     // 질문 가져오기
@@ -281,13 +382,11 @@ export class CommentsService {
 
     // 포인트를 답변 작성자에게 추가하고 질문 작성자의 포인트는 변경하지 않음
     await this.prisma.$transaction(async (prisma) => {
-      // 답변 작성자 포인트 증가
       await prisma.users.update({
         where: { user_id: comment.user_id },
         data: { points: { increment: question.points } },
       });
 
-      // 포인트 변경 내역 추가
       await prisma.point.create({
         data: {
           user_id: comment.user_id,
@@ -296,13 +395,11 @@ export class CommentsService {
         },
       });
 
-      // 답변으로 선택된 댓글 업데이트
       await prisma.comment.update({
         where: { comment_id: commentId },
         data: { isSelected: true },
       });
 
-      // 질문 상태 업데이트
       await prisma.post_Question.update({
         where: { post_id: comment.post_id },
         data: { isAnswered: true },

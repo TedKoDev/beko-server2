@@ -15,7 +15,6 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostsService } from './posts.service';
-
 @Controller({
   path: 'posts',
   version: '1',
@@ -23,14 +22,34 @@ import { PostsService } from './posts.service';
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
+  // 게식글 작성
   @Auth(['ANY'])
   @Post()
   create(
     @Body() createPostDto: CreatePostDto,
-    @Req() req: { user: { userId: number } }, // 인증된 사용자 정보를 가져옴
+    @Req() req: { user: { userId: number } },
   ) {
-    const userId = req.user.userId; // 사용자 ID를 추출
-    return this.postsService.create(userId, createPostDto); // userId를 전달
+    const userId = req.user.userId;
+    return this.postsService.create(userId, createPostDto);
+  }
+
+  // 게시글 임시저장
+  @Auth(['ANY'])
+  @Post('draft')
+  createDraft(
+    @Body() createPostDto: CreatePostDto,
+    @Req() req: { user: { userId: number } },
+  ) {
+    const userId = req.user.userId;
+    return this.postsService.createDraft(userId, createPostDto);
+  }
+
+  // 임시저장된 게시글 목록 조회
+  @Auth(['ANY'])
+  @Get('drafts')
+  findAllDrafts(@Req() req: { user: { userId: number } }) {
+    const userId = req.user.userId;
+    return this.postsService.findAllDrafts(userId);
   }
 
   @Auth(['ANY'])
@@ -53,7 +72,7 @@ export class PostsController {
     @Body() updatePostDto: UpdatePostDto,
     @Req() req: { user: { userId: number; role: string } },
   ) {
-    const userId = req.user.userId; // 인증된 사용자 정보를 가져옴
+    const userId = req.user.userId;
     return this.postsService.update(id, userId, updatePostDto);
   }
 
