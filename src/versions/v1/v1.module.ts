@@ -7,6 +7,7 @@ import { InquiryModule } from './apis/inquiry';
 import { LikesModule } from './apis/likes';
 import { PointsModule } from './apis/point';
 import { PostsModule } from './apis/posts';
+import { SearchModule } from './apis/search';
 import { UserModule } from './apis/user';
 
 @Module({
@@ -19,6 +20,7 @@ import { UserModule } from './apis/user';
     FollowModule,
     PointsModule,
     LikesModule,
+    SearchModule,
   ],
 })
 export class V1Module {}
