@@ -69,38 +69,60 @@ export class AuthService {
   }
 
   // 로그인
-  // 로그인
   async loginUser(email: string, password: string) {
-    console.log('loginUser');
-    console.log(email);
+    // 유저 정보 조회
     const user = await this.prisma.users.findUnique({
       where: { email },
       select: {
         user_id: true,
         encrypted_password: true,
         is_email_verified: true,
-        level: true, // Add this line
+        level: true,
+        last_login_at: true, // 추가: 마지막 로그인 시간 확인
+        login_count: true, // 추가: 로그인 횟수 확인
       },
     });
 
+    // 유저가 존재하지 않으면 에러 발생
     if (user === null) {
       throw new Error('Invalid credentials');
     }
 
+    // 비밀번호 검증
     const isPasswordValid = this._comparePassword(
       password,
       user.encrypted_password,
     );
 
+    // 비밀번호가 유효하지 않거나 이메일이 인증되지 않은 경우 에러 발생
     if (!isPasswordValid) {
       throw new Error('Invalid credentials or email not verified');
     }
 
-    // Check user activity for level update
+    // 로그인 횟수 업데이트 로직
+    // 오늘 날짜와 마지막 로그인 날짜를 비교
+    const today = dayjs().startOf('day'); // 오늘의 시작 시간 (00:00:00)
+    const lastLogin = dayjs(user.last_login_at); // 마지막 로그인 시간을 dayjs 객체로 변환
+
+    // 마지막 로그인 시간이 없거나, 마지막 로그인 날짜가 오늘이 아닌 경우
+    if (!user.last_login_at || !lastLogin.isSame(today, 'day')) {
+      // 로그인 횟수를 증가시키고, 마지막 로그인 시간을 현재 시간으로 업데이트
+      await this.prisma.users.update({
+        where: { user_id: user.user_id },
+        data: {
+          login_count: user.login_count + 1, // 로그인 횟수 증가
+          last_login_at: new Date(), // 현재 시간을 마지막 로그인 시간으로 설정
+        },
+      });
+    }
+
+    // 유저 레벨 업데이트 로직 호출
     await this.updateUserLevel(user.user_id);
 
-    // 코드 유효기간 1분
+    // 코드 유효기간 설정 (1분)
     const expiredAt = dayjs().add(1, 'minute').toDate();
+
+    // 기존에 AuthCode가 있으면 삭제
     const existingAuthCode = await this.prisma.authCode.findUnique({
       where: { user_id: user.user_id },
     });
@@ -109,6 +131,7 @@ export class AuthService {
       await this.prisma.authCode.delete({ where: { user_id: user.user_id } });
     }
 
+    // 새로운 AuthCode 생성
     const { code, keojak_code } = await this.prisma.authCode.create({
       data: {
         user_id: user.user_id,
@@ -116,13 +139,14 @@ export class AuthService {
       },
     });
 
+    // AuthCode와 KeojakCode 반환
     return { authCode: code, keojakCode: keojak_code };
   }
 
-  // 레벨 업데이트
+  // 유저레벨 업데이트
   private async updateUserLevel(userId: number) {
-    // Get user activity counts
-    const [postsCount, commentsCount, likesCount] = await Promise.all([
+    // 유저 활동 내역 조회
+    const [postsCount, commentsCount, likesCount, user] = await Promise.all([
       this.prisma.post.count({
         where: {
           user_id: userId,
@@ -141,31 +165,34 @@ export class AuthService {
           deleted_at: null,
         },
       }),
+      this.prisma.users.findUnique({
+        where: { user_id: userId },
+        select: {
+          level: true,
+          login_count: true,
+        },
+      }),
     ]);
 
-    // Get level thresholds
+    // 레벨 기준 조회
     const thresholds = await this.prisma.levelthreshold.findMany({
       orderBy: { level: 'asc' },
     });
 
-    // Determine new level
+    // 새로운 레벨 결정
     let newLevel = 1;
     for (const threshold of thresholds) {
       if (
         postsCount >= threshold.min_posts &&
         commentsCount >= threshold.min_comments &&
-        likesCount >= threshold.min_likes
+        likesCount >= threshold.min_likes &&
+        user.login_count >= threshold.min_logins // 로그인 횟수 기준 추가
       ) {
         newLevel = threshold.level;
       }
     }
 
-    // Update user's level if changed
-    const user = await this.prisma.users.findUnique({
-      where: { user_id: userId },
-    });
-    // console.log('user.level', user.level);
-
+    // 유저의 레벨이 변경되었을 경우 업데이트
     if (user.level !== newLevel) {
       await this.prisma.users.update({
         where: { user_id: userId },

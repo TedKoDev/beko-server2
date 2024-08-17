@@ -13,12 +13,13 @@ export class LevelThresholdController {
   // 레벨 기준 생성 또는 업데이트
   @Post()
   async createOrUpdateThreshold(@Body() body: CreateOrUpdateLevelThresholdDto) {
-    const { level, min_posts, min_comments, min_likes } = body;
+    const { level, min_posts, min_comments, min_likes, min_logins } = body;
     return this.levelThresholdService.createOrUpdateThreshold(
       level,
       min_posts,
       min_comments,
       min_likes,
+      min_logins,
     );
   }
 

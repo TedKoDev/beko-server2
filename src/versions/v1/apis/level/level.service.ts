@@ -11,14 +11,14 @@ export class LevelThresholdService {
     min_posts: number,
     min_comments: number,
     min_likes: number,
+    min_logins: number, // 추가된 필드
   ) {
     return this.prisma.levelthreshold.upsert({
       where: { level },
-      update: { min_posts, min_comments, min_likes },
-      create: { level, min_posts, min_comments, min_likes },
+      update: { min_posts, min_comments, min_likes, min_logins },
+      create: { level, min_posts, min_comments, min_likes, min_logins },
     });
   }
-
   // 모든 레벨 기준 가져오기
   async getAllThresholds() {
     return this.prisma.levelthreshold.findMany();
