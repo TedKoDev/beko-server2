@@ -19,6 +19,7 @@ export class PointsService {
   }
 
   async findAll(userId: number, paginationQuery: PaginationQueryDto) {
+    console.log(paginationQuery);
     const { page = 1, limit = 10 } = paginationQuery;
     const skip = (page - 1) * limit;
 

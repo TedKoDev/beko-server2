@@ -203,7 +203,7 @@ model picturewordquestion {
   question_id  Int       @id @default(autoincrement())
   image_url    String    @db.VarChar(255)  // 이미지 파일 경로나 URL
   level        Int       // 난이도 레벨
-  answer       String    @db.VarChar(100)  // 정답 단���
+  answer       String    @db.VarChar(100)  // 정답 단
   option1      String    @db.VarChar(100)  // 보기 1
   option2      String    @db.VarChar(100)  // 보기 2
   created_at   DateTime  @default(now()) @db.Timestamp
@@ -576,4 +576,20 @@ model post_consultation {
 
   @@index([student_id])
   @@index([teacher_id])
+}
+
+// 한국어 학교 정보 테이블
+model koreanSchool {
+  school_id         Int       @id @default(autoincrement())
+  country_code      String    @db.VarChar(2)      // ISO 3166-1 alpha-2 코드 (예: KR, US, JP)
+  region            String    @db.VarChar(100)    // 지역 (예: 서울, 부산)
+  name_ko          String    @db.VarChar(100)    // 한글 이름
+  name_en          String    @db.VarChar(100)    // 영문 이름
+  website_url      String?   @db.VarChar(255)    // 학교 웹사이트 링크
+  created_at       DateTime  @default(now()) @db.Timestamp
+  updated_at       DateTime? @db.Timestamp
+  deleted_at       DateTime? @db.Timestamp
+  
+  @@index([country_code])
+  @@index([region])
 }

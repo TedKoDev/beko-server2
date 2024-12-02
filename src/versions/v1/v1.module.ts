@@ -12,6 +12,7 @@ import { LogsModule } from './apis/logsdata';
 import { PointsModule } from './apis/point';
 import { PostsModule } from './apis/posts';
 import { ReportModule } from './apis/report';
+import { SchoolModule } from './apis/school/school.module';
 import { SearchModule } from './apis/search';
 import { UserModule } from './apis/user';
 import { UserBlockModule } from './apis/userblock';
@@ -40,6 +41,7 @@ import { WordModule } from './apis/word';
     S3Module, // Import the S3 module
     LogsModule,
     CountryModule,
+    SchoolModule,
   ],
 })
 export class V1Module {}
