@@ -1,6 +1,7 @@
 import { PrismaService } from '@/prisma';
 import { Injectable } from '@nestjs/common';
 import { CreateSchoolDto } from './dto/create-school.dto';
+import { PaginationDto } from './dto/pagination.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 
 @Injectable()
@@ -13,26 +14,81 @@ export class SchoolService {
     });
   }
 
-  async findAll() {
-    return this.prisma.koreanSchool.findMany({
-      where: {
-        deleted_at: null,
+  async findAll(pagination: PaginationDto) {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+
+    const [total, items] = await Promise.all([
+      // Get total count
+      this.prisma.koreanSchool.count({
+        where: {
+          deleted_at: null,
+        },
+      }),
+      // Get paginated items
+      this.prisma.koreanSchool.findMany({
+        where: {
+          deleted_at: null,
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          created_at: 'desc',
+        },
+      }),
+    ]);
+
+    return {
+      items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-    });
+    };
+  }
+
+  async findByRegion(region: string, pagination: PaginationDto) {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+
+    const [total, items] = await Promise.all([
+      // Get total count
+      this.prisma.koreanSchool.count({
+        where: {
+          region,
+          deleted_at: null,
+        },
+      }),
+      // Get paginated items
+      this.prisma.koreanSchool.findMany({
+        where: {
+          region,
+          deleted_at: null,
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          created_at: 'desc',
+        },
+      }),
+    ]);
+
+    return {
+      items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findOne(school_id: number) {
     return this.prisma.koreanSchool.findUnique({
       where: { school_id },
-    });
-  }
-
-  async findByRegion(region: string) {
-    return this.prisma.koreanSchool.findMany({
-      where: {
-        region,
-        deleted_at: null,
-      },
     });
   }
 
