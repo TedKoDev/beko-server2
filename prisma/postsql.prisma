@@ -69,7 +69,11 @@ model users {
   country             country? @relation(fields: [country_id], references: [country_id]) // 추가
   studentConsultations post_consultation[] @relation("StudentConsultation")
   teacherConsultations post_consultation[] @relation("TeacherConsultation")
+  gameProgress        UserGameProgress[]
+  imageMatchingAnswers ImageMatchingAnswer[]
 }
+
+
 
 
 model levelthreshold {
@@ -199,16 +203,7 @@ model selected_words {
   @@unique([word_id, selected_date]) // 같은 단어가 같은 날에 중복 저장되지 않도록 설정
 }
 
-model picturewordquestion {
-  question_id  Int       @id @default(autoincrement())
-  image_url    String    @db.VarChar(255)  // 이미지 파일 경로나 URL
-  level        Int       // 난이도 레벨
-  answer       String    @db.VarChar(100)  // 정답 단
-  option1      String    @db.VarChar(100)  // 보기 1
-  option2      String    @db.VarChar(100)  // 보기 2
-  created_at   DateTime  @default(now()) @db.Timestamp
-  updated_at   DateTime? @db.Timestamp
-}
+
 
 model youtubelink {
   link_id     Int       @id @default(autoincrement())
@@ -406,7 +401,7 @@ enum reportTargetType {
 model report {
   report_id         Int               @id @default(autoincrement())
   target_type       reportTargetType  // 신고 대상의 유형 (POST, COMMENT, USER)
-  target_id         Int               // 신고 대상의 ID (게시글, 댓글, 사용자)
+  target_id         Int               // 신고 대의 ID (게시글, 댓글, 사용자)
   reported_user_id  Int
   reported_user     users             @relation("ReportedUser", fields: [reported_user_id], references: [user_id])
   reporter_user_id  Int
@@ -592,4 +587,71 @@ model koreanSchool {
   
   @@index([country_code])
   @@index([region])
+}
+
+
+
+
+// 게임만들기 
+// 게임 타입 모델
+model GameType {
+  id              Int           @id @default(autoincrement())
+  name            String        @db.VarChar(100)
+  description     String?       @db.Text
+  created_at      DateTime      @default(now()) @db.Timestamp
+  updated_at      DateTime?     @db.Timestamp
+  deleted_at      DateTime?     @db.Timestamp
+  images          GameQuestion[]
+  userProgress    UserGameProgress[]
+}
+
+// 게임 이미지/문제 통합 모델
+model GameQuestion {
+  question_id   Int       @id @default(autoincrement())
+  game_type_id  Int
+  image_url     String    @unique @db.VarChar(255)
+  answer        String    @db.VarChar(100)
+  options       String[]  // 배열 타입 사용
+  level         Int
+  created_at    DateTime  @default(now()) @db.Timestamp
+  updated_at    DateTime? @db.Timestamp
+  deleted_at    DateTime? @db.Timestamp
+  
+  gameType      GameType  @relation(fields: [game_type_id], references: [id])
+  matchingAnswers ImageMatchingAnswer[] 
+
+  @@index([level])
+  @@index([game_type_id])
+}
+
+// 사용자 게임 진행상황 모델
+model UserGameProgress {
+  progress_id    Int       @id @default(autoincrement())
+  user_id        Int
+  game_type_id   Int
+  current_level  Int       @default(1)
+  max_level      Int       @default(1)
+  total_correct  Int       @default(0)
+  total_attempts Int       @default(0)
+  created_at     DateTime  @default(now()) @db.Timestamp
+  updated_at     DateTime? @db.Timestamp
+  last_played_at DateTime  @default(now()) @db.Timestamp
+  
+  user           users     @relation(fields: [user_id], references: [user_id])
+  gameType       GameType  @relation(fields: [game_type_id], references: [id])
+
+  @@unique([user_id, game_type_id])
+}
+
+// 사용자 게임 답변 기록 모델
+model ImageMatchingAnswer {
+  answer_id    Int        @id @default(autoincrement())
+  user_id      Int
+  question_id     Int
+  answer       String     @db.VarChar(100)
+  is_correct   Boolean
+  created_at   DateTime   @default(now()) @db.Timestamp
+  
+  user         users      @relation(fields: [user_id], references: [user_id])
+  gameQuestion GameQuestion  @relation(fields: [question_id], references: [question_id])
 }
