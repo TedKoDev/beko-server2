@@ -8,6 +8,7 @@ import { CountryModule } from './apis/country/country.module';
 import { EmailModule } from './apis/email';
 import { FollowModule } from './apis/follow';
 import { GamesModule } from './apis/games/games.module';
+import { LevelThresholdModule } from './apis/level';
 import { LikesModule } from './apis/likes';
 import { LogsModule } from './apis/logsdata';
 import { PointsModule } from './apis/point';
@@ -44,6 +45,7 @@ import { WordModule } from './apis/word';
     CountryModule,
     SchoolModule,
     GamesModule,
+    LevelThresholdModule,
   ],
 })
 export class V1Module {}
