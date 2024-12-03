@@ -20,4 +20,8 @@ export class CreateOrUpdateLevelThresholdDto {
   @IsInt()
   @IsNotEmpty()
   min_logins: number;
+
+  @IsInt()
+  @IsNotEmpty()
+  min_experience: number;
 }

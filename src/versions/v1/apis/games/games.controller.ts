@@ -6,42 +6,60 @@ import { SubmitAnswerDto } from './dto/submit-answer.dto';
 import { GamesService } from './games.service';
 
 @ApiTags('게임')
-@Controller('games')
+@Controller({
+  path: 'games',
+  version: '1',
+})
 export class GamesController {
   constructor(private readonly gamesService: GamesService) {}
 
-  @Get('image-matching/questions')
-  @ApiOperation({ summary: '이미지 매칭 게임 문제 조회' })
+  @Get('types')
+  @ApiOperation({ summary: '게임 종류 목록 조회' })
+  async getGameTypes() {
+    return this.gamesService.getGameTypes();
+  }
+
+  @Get('questions')
+  @ApiOperation({ summary: '게임 문제 조회' })
   @Auth(['ANY'])
-  async getImageMatchingQuestions(
+  async getQuestions(
+    @Query('gameTypeId') gameTypeId: number,
     @Query('level') level: number = 1,
     @Query('limit') limit: number = 10,
   ) {
-    return this.gamesService.getImageMatchingQuestions(level, limit);
+    return this.gamesService.getImageMatchingQuestions(
+      gameTypeId,
+      level,
+      limit,
+    );
   }
 
-  @Post('image-matching/submit')
-  @ApiOperation({ summary: '이미지 매칭 게임 답안 제출' })
+  @Post('submit')
+  @ApiOperation({ summary: '게임 답안 제출' })
   @Auth(['ANY'])
-  async submitImageMatchingAnswer(
+  async submitAnswer(
     @Req() req: { user: { userId: number } },
+    @Query('gameTypeId') gameTypeId: number,
     @Body() submitAnswerDto: SubmitAnswerDto,
   ) {
     const userId = req.user.userId;
-    return this.gamesService.submitImageMatchingAnswer(userId, submitAnswerDto);
+    return this.gamesService.submitAnswer(userId, gameTypeId, submitAnswerDto);
   }
 
-  @Get('image-matching/progress')
-  @ApiOperation({ summary: '이미지 매칭 게임 진행상황 조회' })
+  @Get('progress')
+  @ApiOperation({ summary: '게임 진행상황 조회' })
   @Auth(['ANY'])
-  async getImageMatchingProgress(@Req() req: { user: { userId: number } }) {
+  async getProgress(
+    @Req() req: { user: { userId: number } },
+    @Query('gameTypeId') gameTypeId: number,
+  ) {
     const userId = req.user.userId;
-    return this.gamesService.getGameProgress(userId, 1); // 1은 이미지 매칭 게임의 ID
+    return this.gamesService.getGameProgress(userId, gameTypeId);
   }
 
-  @Get('image-matching/leaderboard')
-  @ApiOperation({ summary: '이미지 매칭 게임 리더보드' })
-  async getImageMatchingLeaderboard() {
-    return this.gamesService.getLeaderboard(1); // 1은 이미지 매칭 게임의 ID
+  @Get('leaderboard')
+  @ApiOperation({ summary: '게임 리더보드' })
+  async getLeaderboard(@Query('gameTypeId') gameTypeId: number) {
+    return this.gamesService.getLeaderboard(gameTypeId);
   }
 }

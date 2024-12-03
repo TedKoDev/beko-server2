@@ -234,6 +234,7 @@ export class UserService {
       profile_picture_url: user.profile_picture_url,
       points: user.points,
       level: user.level,
+      experience_points: user.experience_points,
       today_task_count: user.today_task_count,
       role: user.role,
       account_status: user.account_status,

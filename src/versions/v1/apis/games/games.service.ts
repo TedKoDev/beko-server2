@@ -7,10 +7,14 @@ import { SubmitAnswerDto } from './dto/submit-answer.dto';
 export class GamesService {
   constructor(private prisma: PrismaService) {}
 
-  async getImageMatchingQuestions(level: number, limit: number) {
+  async getImageMatchingQuestions(
+    gameTypeId: number,
+    level: number,
+    limit: number,
+  ) {
     const questions = await this.prisma.gameQuestion.findMany({
       where: {
-        game_type_id: 1, // 이미지 매칭 게임
+        game_type_id: gameTypeId,
         level: level,
       },
       select: {
@@ -29,8 +33,9 @@ export class GamesService {
     return questions;
   }
 
-  async submitImageMatchingAnswer(
+  async submitAnswer(
     userId: number,
+    gameTypeId: number,
     submitAnswerDto: SubmitAnswerDto,
   ) {
     const { questionId, answer } = submitAnswerDto;
@@ -57,7 +62,7 @@ export class GamesService {
     });
 
     // 진행상황 업데이트
-    await this.updateGameProgress(userId, 1, isCorrect);
+    await this.updateGameProgress(userId, gameTypeId, isCorrect);
 
     return {
       isCorrect,
@@ -70,36 +75,96 @@ export class GamesService {
     gameTypeId: number,
     isCorrect: boolean,
   ) {
-    const progress = await this.prisma.userGameProgress.findUnique({
-      where: {
-        user_id_game_type_id: {
-          user_id: userId,
-          game_type_id: gameTypeId,
-        },
-      },
-    });
-
-    if (progress) {
-      await this.prisma.userGameProgress.update({
+    // 트랜잭션으로 처리
+    await this.prisma.$transaction(async (prisma) => {
+      const progress = await prisma.userGameProgress.findUnique({
         where: {
           user_id_game_type_id: {
             user_id: userId,
             game_type_id: gameTypeId,
           },
         },
-        data: {
-          total_attempts: { increment: 1 },
-          total_correct: isCorrect ? { increment: 1 } : undefined,
-          last_played_at: new Date(),
-        },
       });
-    } else {
-      await this.prisma.userGameProgress.create({
+
+      // 게임 진행상황 업데이트
+      if (progress) {
+        await prisma.userGameProgress.update({
+          where: {
+            user_id_game_type_id: {
+              user_id: userId,
+              game_type_id: gameTypeId,
+            },
+          },
+          data: {
+            total_attempts: { increment: 1 },
+            total_correct: isCorrect ? { increment: 1 } : undefined,
+            last_played_at: new Date(),
+          },
+        });
+      } else {
+        await prisma.userGameProgress.create({
+          data: {
+            user_id: userId,
+            game_type_id: gameTypeId,
+            total_attempts: 1,
+            total_correct: isCorrect ? 1 : 0,
+          },
+        });
+      }
+
+      // 정답인 경우에만 경험치 부여
+      if (isCorrect) {
+        const xpGained = 10; // 기본 경험치 획득량
+
+        await prisma.users.update({
+          where: { user_id: userId },
+          data: {
+            experience_points: {
+              increment: xpGained,
+            },
+          },
+        });
+
+        // 레벨업 체크 및 처리
+        await this.checkAndProcessLevelUp(userId);
+      }
+    });
+  }
+
+  private async checkAndProcessLevelUp(userId: number) {
+    const user = await this.prisma.users.findUnique({
+      where: { user_id: userId },
+      select: {
+        level: true,
+        experience_points: true,
+      },
+    });
+
+    if (!user) return;
+
+    // 현재 레벨에 대한 기준 가져오기
+    const levelThreshold = await this.prisma.levelthreshold.findUnique({
+      where: { level: user.level },
+    });
+
+    if (!levelThreshold) return;
+
+    // 경험치와 다른 조건을 모두 만족하는지 확인
+    const canLevelUp =
+      user.experience_points >= levelThreshold.min_experience &&
+      // 다른 조건들도 추가 가능
+      // 예: user.posts >= levelThreshold.min_posts
+      // 예: user.comments >= levelThreshold.min_comments
+      true;
+
+    if (canLevelUp) {
+      await this.prisma.users.update({
+        where: { user_id: userId },
         data: {
-          user_id: userId,
-          game_type_id: gameTypeId,
-          total_attempts: 1,
-          total_correct: isCorrect ? 1 : 0,
+          level: { increment: 1 },
+          experience_points:
+            user.experience_points - levelThreshold.min_experience, // 남은 경험치
+          points: { increment: 100 }, // 레벨업 보상 포인트
         },
       });
     }
@@ -164,5 +229,17 @@ export class GamesService {
       total_correct: entry.total_correct,
       accuracy: (entry.total_correct / entry.total_attempts) * 100,
     }));
+  }
+
+  async getGameTypes() {
+    const gameTypes = await this.prisma.gameType.findMany({
+      select: {
+        game_type_id: true,
+        name: true,
+        description: true,
+      },
+    });
+
+    return gameTypes;
   }
 }

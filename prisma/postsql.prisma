@@ -37,6 +37,7 @@ model users {
   email_verification_token String?     @db.VarChar(255)
   points              Int              @default(2000)
   level               Int              @default(1)
+  experience_points   Int              @default(0)
   is_email_verified   Boolean          @default(false)
   role                role             @default(USER)
   today_task_count    Int              @default(0)
@@ -81,7 +82,8 @@ model levelthreshold {
   min_posts            Int
   min_comments         Int
   min_likes            Int
-  min_logins           Int     @default(0) // 방문 횟수 기준 필드 추가
+  min_logins           Int     @default(0)
+  min_experience       Int     @default(0) // 경험치 기준 필드 추가
   created_at           DateTime @default(now()) @db.Timestamp
   updated_at           DateTime? @db.Timestamp
   deleted_at           DateTime? @db.Timestamp
@@ -595,7 +597,7 @@ model koreanSchool {
 // 게임만들기 
 // 게임 타입 모델
 model GameType {
-  id              Int           @id @default(autoincrement())
+  game_type_id    Int           @id @default(autoincrement())
   name            String        @db.VarChar(100)
   description     String?       @db.Text
   created_at      DateTime      @default(now()) @db.Timestamp
@@ -617,7 +619,7 @@ model GameQuestion {
   updated_at    DateTime? @db.Timestamp
   deleted_at    DateTime? @db.Timestamp
   
-  gameType      GameType  @relation(fields: [game_type_id], references: [id])
+  gameType      GameType  @relation(fields: [game_type_id], references: [game_type_id])
   matchingAnswers ImageMatchingAnswer[] 
 
   @@index([level])
@@ -638,7 +640,7 @@ model UserGameProgress {
   last_played_at DateTime  @default(now()) @db.Timestamp
   
   user           users     @relation(fields: [user_id], references: [user_id])
-  gameType       GameType  @relation(fields: [game_type_id], references: [id])
+  gameType       GameType  @relation(fields: [game_type_id], references: [game_type_id])
 
   @@unique([user_id, game_type_id])
 }

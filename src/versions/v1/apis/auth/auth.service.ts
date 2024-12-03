@@ -161,6 +161,7 @@ export class AuthService {
     const today = dayjs().startOf('day');
     const lastLogin = dayjs(user.last_login_at);
 
+    // 로그인 카운트만 업데이트
     if (!user.last_login_at || !lastLogin.isSame(today, 'day')) {
       await this.prisma.users.update({
         where: { user_id: user.user_id },
@@ -171,15 +172,86 @@ export class AuthService {
       });
     }
 
-    await this.updateUserLevel(user.user_id);
+    // 경험치 기반 레벨 업데이트
+    await this.updateLevelBasedOnExp(user.user_id);
 
     const payload = { userId: user.user_id, role: user.role };
     const accessToken = this.jwtService.sign(payload, { expiresIn: '1w' });
 
+    // 업데이트된 사용자 정보 다시 조회
+    const updatedUser = await this.prisma.users.findUnique({
+      where: { user_id: user.user_id },
+      include: {
+        _count: {
+          select: {
+            post: true,
+            comment: true,
+            followers: true,
+            following: true,
+          },
+        },
+      },
+    });
+
     return {
       access_token: accessToken,
-      user: user,
+      user: updatedUser,
     };
+  }
+
+  // 경험치 기반 레벨 업데이트 함수
+  private async updateLevelBasedOnExp(userId: number) {
+    const user = await this.prisma.users.findUnique({
+      where: { user_id: userId },
+      select: { experience_points: true, level: true },
+    });
+
+    if (!user) return;
+
+    // 모든 레벨 임계값 가져오기 (오름차순)
+    const levelThresholds = await this.prisma.levelthreshold.findMany({
+      orderBy: { level: 'asc' },
+      select: { level: true, min_experience: true },
+    });
+
+    // 현재 경험치에 맞는 레벨 찾기
+    let appropriateLevel = 1; // 기본 레벨
+    for (const threshold of levelThresholds) {
+      if (user.experience_points >= threshold.min_experience) {
+        appropriateLevel = threshold.level;
+      } else {
+        break; // 현재 경험치보다 높은 임계값을 만나면 중단
+      }
+    }
+
+    // 현재 레벨과 다르다면 업데이트
+    if (user.level !== appropriateLevel) {
+      await this.prisma.users.update({
+        where: { user_id: userId },
+        data: { level: appropriateLevel },
+      });
+
+      // 레벨업 했을 경우에만 포인트 지급 및 기록
+      if (appropriateLevel > user.level) {
+        const pointsToAdd = (appropriateLevel - user.level) * 100; // 레벨당 100포인트
+
+        await this.prisma.users.update({
+          where: { user_id: userId },
+          data: {
+            points: { increment: pointsToAdd },
+          },
+        });
+
+        // 포인트 지급 기록
+        await this.prisma.point.create({
+          data: {
+            user_id: userId,
+            points_change: pointsToAdd,
+            change_reason: `Level up to ${appropriateLevel}`,
+          },
+        });
+      }
+    }
   }
 
   // 이메일 인증

@@ -7,6 +7,7 @@ import { CommentsModule } from './apis/comments';
 import { CountryModule } from './apis/country/country.module';
 import { EmailModule } from './apis/email';
 import { FollowModule } from './apis/follow';
+import { GamesModule } from './apis/games/games.module';
 import { LikesModule } from './apis/likes';
 import { LogsModule } from './apis/logsdata';
 import { PointsModule } from './apis/point';
@@ -42,6 +43,7 @@ import { WordModule } from './apis/word';
     LogsModule,
     CountryModule,
     SchoolModule,
+    GamesModule,
   ],
 })
 export class V1Module {}
