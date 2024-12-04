@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Auth } from '@/decorators';
@@ -69,5 +69,12 @@ export class GamesController {
   async getAllProgress(@Req() req: { user: { userId: number } }) {
     const userId = req.user.userId;
     return this.gamesService.getAllGameProgress(userId);
+  }
+
+  @Get('types/:gameTypeId/levels')
+  @ApiOperation({ summary: '게임 레벨 정보 조회' })
+  @Auth(['ANY'])
+  async getGameLevelInfo(@Param('gameTypeId') gameTypeId: number) {
+    return this.gamesService.getGameLevelInfo(gameTypeId);
   }
 }

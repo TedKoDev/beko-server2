@@ -313,4 +313,52 @@ export class GamesService {
 
     return Promise.all(progressPromises);
   }
+
+  async getGameLevelInfo(gameTypeId: number) {
+    // 게임 타입 확인
+    const gameType = await this.prisma.gameType.findUnique({
+      where: { game_type_id: gameTypeId },
+      select: {
+        name: true,
+        description: true,
+      },
+    });
+
+    if (!gameType) {
+      throw new NotFoundException('해당 게임을 찾을 수 없습니다.');
+    }
+
+    // 해당 게임의 모든 레벨별 문제 수 조회
+    const levelCounts = await this.prisma.gameQuestion.groupBy({
+      by: ['level'],
+      where: {
+        game_type_id: gameTypeId,
+        deleted_at: null,
+      },
+      _count: {
+        question_id: true,
+      },
+      orderBy: {
+        level: 'asc',
+      },
+    });
+
+    // 최소, 최대 레벨 계산
+    const minLevel = levelCounts[0]?.level ?? 0;
+    const maxLevel = levelCounts[levelCounts.length - 1]?.level ?? 0;
+
+    return {
+      game_type_id: gameTypeId,
+      game_name: gameType.name,
+      description: gameType.description,
+      level_info: {
+        min_level: minLevel,
+        max_level: maxLevel,
+        levels: levelCounts.map((level) => ({
+          level: level.level,
+          question_count: level._count.question_id,
+        })),
+      },
+    };
+  }
 }
