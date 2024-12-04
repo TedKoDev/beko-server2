@@ -649,9 +649,10 @@ model UserGameProgress {
 model ImageMatchingAnswer {
   answer_id    Int        @id @default(autoincrement())
   user_id      Int
-  question_id     Int
+  question_id  Int
   answer       String     @db.VarChar(100)
   is_correct   Boolean
+  session_id   String     // 추가: 게임 세션 ID
   created_at   DateTime   @default(now()) @db.Timestamp
   
   user         users      @relation(fields: [user_id], references: [user_id])

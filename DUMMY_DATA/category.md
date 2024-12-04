@@ -1,4 +1,36 @@
--- category 테이블에 더미 데이터 삽입
+-- 1:1 Inquiry Categories
+INSERT INTO public."category" (topic_id, category_name, created_at, updated_at, deleted_at) VALUES
+((SELECT topic_id FROM public."topic" WHERE title = '1:1 Inquiry'), 'Grammar Consultation', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = '1:1 Inquiry'), 'Writing Feedback', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = '1:1 Inquiry'), 'Pronunciation Correction', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = '1:1 Inquiry'), 'Learning Consultation', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = '1:1 Inquiry'), 'Other Consultations', NOW(), NULL, NULL);
+
+-- Korean Language Learning Categories
+INSERT INTO public."category" (topic_id, category_name, created_at, updated_at, deleted_at) VALUES
+((SELECT topic_id FROM public."topic" WHERE title = 'Korean Language Learning'), 'Grammar', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Korean Language Learning'), 'Vocabulary', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Korean Language Learning'), 'Pronunciation', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Korean Language Learning'), 'Writing', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Korean Language Learning'), 'Speaking', NOW(), NULL, NULL);
+
+-- Korean Culture Categories
+INSERT INTO public."category" (topic_id, category_name, created_at, updated_at, deleted_at) VALUES
+((SELECT topic_id FROM public."topic" WHERE title = 'Korean Culture'), 'K-POP', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Korean Culture'), 'Movies/Drama', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Korean Culture'), 'Food', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Korean Culture'), 'Traditional Culture', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Korean Culture'), 'Everyday Culture', NOW(), NULL, NULL);
+
+-- Community Categories
+INSERT INTO public."category" (topic_id, category_name, created_at, updated_at, deleted_at) VALUES
+((SELECT topic_id FROM public."topic" WHERE title = 'Community'), 'Free Board', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Community'), 'Find Friends', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Community'), 'Study Group Recruitment', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Community'), 'Korea Living Information', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Community'), 'Experience Sharing', NOW(), NULL, NULL);
+
+<!-- -- category 테이블에 더미 데이터 삽입
 
 -- 1:1 문의 카테고리
 INSERT INTO public."category" (topic_id, category_name, created_at, updated_at, deleted_at) VALUES
@@ -30,12 +62,4 @@ INSERT INTO public."category" (topic_id, category_name, created_at, updated_at, 
 ((SELECT topic_id FROM public."topic" WHERE title = '커뮤니티'), '친구찾기', NOW(), NULL, NULL),
 ((SELECT topic_id FROM public."topic" WHERE title = '커뮤니티'), '스터디모집', NOW(), NULL, NULL),
 ((SELECT topic_id FROM public."topic" WHERE title = '커뮤니티'), '한국생활정보', NOW(), NULL, NULL),
-((SELECT topic_id FROM public."topic" WHERE title = '커뮤니티'), '경험공유', NOW(), NULL, NULL);
-
--- 학습 자료 카테고리
-INSERT INTO public."category" (topic_id, category_name, created_at, updated_at, deleted_at) VALUES
-((SELECT topic_id FROM public."topic" WHERE title = '학습 자료'), '교재추천', NOW(), NULL, NULL),
-((SELECT topic_id FROM public."topic" WHERE title = '학습 자료'), '학습앱소개', NOW(), NULL, NULL),
-((SELECT topic_id FROM public."topic" WHERE title = '학습 자료'), '온라인강의', NOW(), NULL, NULL),
-((SELECT topic_id FROM public."topic" WHERE title = '학습 자료'), '시험정보', NOW(), NULL, NULL),
-((SELECT topic_id FROM public."topic" WHERE title = '학습 자료'), '학습팁', NOW(), NULL, NULL);
+((SELECT topic_id FROM public."topic" WHERE title = '커뮤니티'), '경험공유', NOW(), NULL, NULL); -->

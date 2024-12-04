@@ -9,4 +9,8 @@ export class SubmitAnswerDto {
   @ApiProperty({ description: '제출한 답안' })
   @IsString()
   answer: string;
+
+  @ApiProperty({ description: '게임 세션 ID' })
+  @IsString()
+  sessionId: string;
 }
