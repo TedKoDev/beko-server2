@@ -171,31 +171,52 @@ export class GamesService {
   }
 
   async getGameProgress(userId: number, gameTypeId: number) {
-    const progress = await this.prisma.userGameProgress.findUnique({
-      where: {
-        user_id_game_type_id: {
-          user_id: userId,
-          game_type_id: gameTypeId,
+    const [gameType, progress] = await Promise.all([
+      this.prisma.gameType.findUnique({
+        where: { game_type_id: gameTypeId },
+        select: {
+          name: true,
+          description: true,
         },
-      },
-    });
+      }),
+      this.prisma.userGameProgress.findUnique({
+        where: {
+          user_id_game_type_id: {
+            user_id: userId,
+            game_type_id: gameTypeId,
+          },
+        },
+      }),
+    ]);
 
-    if (!progress) {
-      return {
-        current_level: 1,
-        max_level: 1,
-        total_correct: 0,
-        total_attempts: 0,
-        accuracy: 0,
-      };
+    if (!gameType) {
+      throw new NotFoundException('게임을 찾을 수 없습니다.');
     }
 
     return {
-      ...progress,
-      accuracy:
-        progress.total_attempts > 0
-          ? (progress.total_correct / progress.total_attempts) * 100
-          : 0,
+      game_type_id: gameTypeId,
+      game_name: gameType.name,
+      description: gameType.description,
+      progress: progress
+        ? {
+            current_level: progress.current_level,
+            max_level: progress.max_level,
+            total_correct: progress.total_correct,
+            total_attempts: progress.total_attempts,
+            accuracy:
+              progress.total_attempts > 0
+                ? (progress.total_correct / progress.total_attempts) * 100
+                : 0,
+            last_played_at: progress.last_played_at,
+          }
+        : {
+            current_level: 1,
+            max_level: 1,
+            total_correct: 0,
+            total_attempts: 0,
+            accuracy: 0,
+            last_played_at: null,
+          },
     };
   }
 
@@ -241,5 +262,55 @@ export class GamesService {
     });
 
     return gameTypes;
+  }
+
+  // 모든 게임의 진행상황 조회
+  async getAllGameProgress(userId: number) {
+    const allGameTypes = await this.prisma.gameType.findMany({
+      select: {
+        game_type_id: true,
+        name: true,
+        description: true,
+      },
+    });
+
+    const progressPromises = allGameTypes.map(async (gameType) => {
+      const progress = await this.prisma.userGameProgress.findUnique({
+        where: {
+          user_id_game_type_id: {
+            user_id: userId,
+            game_type_id: gameType.game_type_id,
+          },
+        },
+      });
+
+      return {
+        game_type_id: gameType.game_type_id,
+        game_name: gameType.name,
+        description: gameType.description,
+        progress: progress
+          ? {
+              current_level: progress.current_level,
+              max_level: progress.max_level,
+              total_correct: progress.total_correct,
+              total_attempts: progress.total_attempts,
+              accuracy:
+                progress.total_attempts > 0
+                  ? (progress.total_correct / progress.total_attempts) * 100
+                  : 0,
+              last_played_at: progress.last_played_at,
+            }
+          : {
+              current_level: 1,
+              max_level: 1,
+              total_correct: 0,
+              total_attempts: 0,
+              accuracy: 0,
+              last_played_at: null,
+            },
+      };
+    });
+
+    return Promise.all(progressPromises);
   }
 }

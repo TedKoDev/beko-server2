@@ -62,4 +62,12 @@ export class GamesController {
   async getLeaderboard(@Query('gameTypeId') gameTypeId: number) {
     return this.gamesService.getLeaderboard(gameTypeId);
   }
+
+  @Get('all-progress')
+  @ApiOperation({ summary: '모든 게임 진행상황 조회' })
+  @Auth(['ANY'])
+  async getAllProgress(@Req() req: { user: { userId: number } }) {
+    const userId = req.user.userId;
+    return this.gamesService.getAllGameProgress(userId);
+  }
 }
