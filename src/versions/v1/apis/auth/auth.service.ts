@@ -1,8 +1,14 @@
 import { PrismaService } from '@/prisma';
 import { ROLE } from '@/types/v1'; // accountStatus import
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { accountStatus } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import * as config from 'config';
 import { pbkdf2Sync } from 'crypto';
 import * as dayjs from 'dayjs';
@@ -44,7 +50,7 @@ export class AuthService {
       }
 
       // const emailVerificationToken = uuidv4();
-      const encryptedPassword = this._encryptPassword(password);
+      const encryptedPassword = await bcrypt.hash(password, 10);
 
       let finalUsername = name;
       const existingUsernameUser = await this.prisma.users.findUnique({
@@ -128,16 +134,6 @@ export class AuthService {
   async loginUser(email: string, password: string) {
     const user = await this.prisma.users.findUnique({
       where: { email },
-      include: {
-        _count: {
-          select: {
-            post: true,
-            comment: true,
-            followers: true,
-            following: true,
-          },
-        },
-      },
     });
 
     if (!user) {
@@ -147,55 +143,26 @@ export class AuthService {
       );
     }
 
-    if (!this._comparePassword(password, user.encrypted_password)) {
+    // bcrypt로 암호화된 비밀번호와 비교
+    const isMatch = await bcrypt.compare(password, user.encrypted_password);
+    if (!isMatch) {
       throw new HttpException(
         '비밀번호가 일치하지 않습니다',
         HttpStatus.UNAUTHORIZED,
       );
     }
 
-    if (!user.is_email_verified) {
-      throw new HttpException('이메일 인증이 필요합니다', HttpStatus.FORBIDDEN);
-    }
-
-    const today = dayjs().startOf('day');
-    const lastLogin = dayjs(user.last_login_at);
-
-    // 로그인 카운트만 업데이트
-    if (!user.last_login_at || !lastLogin.isSame(today, 'day')) {
-      await this.prisma.users.update({
-        where: { user_id: user.user_id },
-        data: {
-          login_count: user.login_count + 1,
-          last_login_at: new Date(),
-        },
-      });
-    }
-
-    // 경험치 기반 레벨 업데이트
-    await this.updateLevelBasedOnExp(user.user_id);
-
+    // 로그인 성공 시 추가 로직 (예: JWT 토큰 발급 등)
     const payload = { userId: user.user_id, role: user.role };
     const accessToken = this.jwtService.sign(payload, { expiresIn: '1w' });
 
-    // 업데이트된 사용자 정보 다시 조회
-    const updatedUser = await this.prisma.users.findUnique({
-      where: { user_id: user.user_id },
-      include: {
-        _count: {
-          select: {
-            post: true,
-            comment: true,
-            followers: true,
-            following: true,
-          },
-        },
-      },
-    });
-
     return {
       access_token: accessToken,
-      user: updatedUser,
+      user: {
+        user_id: user.user_id,
+        username: user.username,
+        // 추가 사용자 정보
+      },
     };
   }
 
@@ -419,5 +386,22 @@ export class AuthService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async validateUserPassword(
+    userId: number,
+    password: string,
+  ): Promise<boolean> {
+    const user = await this.prisma.users.findUnique({
+      where: { user_id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // 비밀번호 비교 로직
+    const isMatch = await bcrypt.compare(password, user.encrypted_password);
+    return isMatch;
   }
 }

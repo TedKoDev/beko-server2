@@ -9,14 +9,18 @@ import {
   Query,
   Req,
   Res,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
 
 import { Auth } from '@/decorators';
 import { ROLE } from '@/types/v1';
+
 import { JwtAuthGuard } from '../auth';
+import { AuthService } from '../auth/auth.service';
 import { PaginationQueryDto } from './dto';
+import { DeactivateUserDto } from './dto/deactivate-user.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { USER_SERVIE_TOKEN, UserService } from './user.service';
 
@@ -29,6 +33,8 @@ export class UserController {
   constructor(
     @Inject(USER_SERVIE_TOKEN)
     private readonly userService: UserService,
+
+    private readonly authService: AuthService,
   ) {}
 
   @Get('profile')
@@ -105,5 +111,26 @@ export class UserController {
   async getCurrentUser(@Req() req) {
     const userId = req.user.userId; // JWT에서 추출한 userId
     return this.userService.getCurrentUser(userId);
+  }
+
+  @Post('deactivate')
+  @Auth(['ANY'])
+  async deactivateUser(
+    @Req() req: { user: { userId: number } },
+    @Body() dto: DeactivateUserDto,
+  ) {
+    console.log('User ID:', req.user.userId);
+    console.log('Password:', dto.password); // 비밀번호 로그
+
+    const isPasswordValid = await this.authService.validateUserPassword(
+      req.user.userId,
+      dto.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('비밀번호가 일치하지 않습니다.');
+    }
+
+    return this.userService.deactivateUser(req.user.userId);
   }
 }

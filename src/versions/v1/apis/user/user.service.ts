@@ -258,4 +258,56 @@ export class UserService {
       },
     };
   }
+
+  async deactivateUser(userId: number) {
+    // 트랜잭션으로 처리
+    return await this.prisma.$transaction(async (prisma) => {
+      const user = await prisma.users.findUnique({
+        where: { user_id: userId },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // 사용자 계정 비활성화
+      await prisma.users.update({
+        where: { user_id: userId },
+        data: {
+          account_status: 'INACTIVE',
+          deleted_at: new Date(),
+          // 개인정보 마스킹 처리
+          email: `deleted_${userId}@deleted.com`,
+          username: `Anonymous`,
+          bio: null,
+          profile_picture_url: null,
+          phone_number: null,
+          // 필요한 경우 다른 개인정보도 마스킹 또는 삭제
+        },
+      });
+
+      // 관련된 소셜 로그인 정보 비활성화
+      await prisma.socialLogin.updateMany({
+        where: { user_id: userId },
+        data: {
+          deleted_at: new Date(),
+        },
+      });
+
+      // 팔로우 관계 비활성화
+      await prisma.follow.updateMany({
+        where: {
+          OR: [{ follower_id: userId }, { following_id: userId }],
+        },
+        data: {
+          deleted_at: new Date(),
+        },
+      });
+
+      return {
+        message: '계정이 성공적으로 비활성화되었습니다.',
+        deactivatedAt: new Date(),
+      };
+    });
+  }
 }
