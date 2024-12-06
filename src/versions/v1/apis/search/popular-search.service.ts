@@ -39,27 +39,63 @@ export class PopularSearchService {
     return 'SAME';
   }
 
+  private async updateRanks() {
+    // 검색 횟수를 기준으로 모든 키워드 조회
+    const keywords = await this.prisma.popularSearchRank.findMany({
+      orderBy: {
+        search_count: 'desc',
+      },
+    });
+
+    // 각 키워드의 순위 업데이트
+    for (let i = 0; i < keywords.length; i++) {
+      const keyword = keywords[i];
+      const newRank = i + 1; // 1부터 시작하는 순위
+
+      await this.prisma.popularSearchRank.update({
+        where: { id: keyword.id },
+        data: {
+          previous_rank: keyword.current_rank,
+          current_rank: newRank,
+          rank_difference: keyword.current_rank
+            ? keyword.current_rank - newRank
+            : null,
+          rank_change: this.calculateRankChange({
+            current_rank: newRank,
+            previous_rank: keyword.current_rank,
+          }),
+          check_time: new Date(),
+        },
+      });
+    }
+  }
+
   async recordSearch(keyword: string) {
     const existingKeyword = await this.prisma.popularSearchRank.findFirst({
       where: { keyword },
     });
 
     if (existingKeyword) {
-      // 이미 존재하는 검색어면 검색 횟수를 증가시킴
+      // 이미 존재하는 검색어면 검색 횟수만 증가
       await this.prisma.popularSearchRank.update({
         where: { id: existingKeyword.id },
-        data: { search_count: { increment: 1 } },
+        data: {
+          search_count: { increment: 1 },
+        },
       });
     } else {
-      // 새로운 검색어면 추가
+      // 새로운 검색어 추가
       await this.prisma.popularSearchRank.create({
         data: {
           keyword,
           search_count: 1,
-          current_rank: 0, // 초기값, 나중에 순위 갱신 시 업데이트
+          current_rank: 0,
           rank_change: 'NEW',
         },
       });
     }
+
+    // 순위 업데이트 실행
+    await this.updateRanks();
   }
 }

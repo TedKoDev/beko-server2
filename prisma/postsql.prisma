@@ -398,6 +398,7 @@ enum reportTargetType {
   POST
   COMMENT
   USER
+  GENERAL
 }
 
 model report {
