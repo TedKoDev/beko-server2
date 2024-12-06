@@ -34,6 +34,7 @@
     "@nestjs/mapped-types": "^2.0.5",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/schedule": "^4.1.1",
     "@nestjs/swagger": "^7.4.0",
     "@prisma/client": "6.0.1",
     "@slack/web-api": "^7.4.0",

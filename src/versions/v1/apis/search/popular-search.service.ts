@@ -1,5 +1,6 @@
 import { PrismaService } from '@/prisma/postsql-prisma.service';
 import { Injectable } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PopularSearchDto } from './dto/popular-search.dto';
 
 @Injectable()
@@ -39,6 +40,7 @@ export class PopularSearchService {
     return 'SAME';
   }
 
+  @Cron('0 * * * *')
   private async updateRanks() {
     // 검색 횟수를 기준으로 모든 키워드 조회
     const keywords = await this.prisma.popularSearchRank.findMany({
