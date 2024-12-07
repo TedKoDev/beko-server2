@@ -7,12 +7,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LoggingInterceptor } from './interceptor';
 import { V1Module } from './versions/v1';
+import { NotificationModule } from './versions/v1/apis/notification/notification.module';
 
 @Module({
   imports: [
     V1Module,
     JwtModule.register({ global: true, secret: config.get('jwt.secret') }),
     ScheduleModule.forRoot(),
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [

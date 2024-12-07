@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { CreateMediaDto } from '../media/dto';
 import { MediaService } from '../media/media.service';
+import { NotificationService } from '../notification/notification.service';
 import { PointsService } from '../point/points.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
@@ -19,6 +20,7 @@ export class CommentsService {
     private prisma: PrismaService,
     private mediaService: MediaService,
     private pointsService: PointsService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async create(userId: number, createCommentDto: CreateCommentDto) {
@@ -35,6 +37,21 @@ export class CommentsService {
       where: { post_id: createCommentDto.postId },
       data: { comments: { increment: 1 } },
     });
+
+    const post = await this.prisma.post.findUnique({
+      where: { post_id: createCommentDto.postId },
+    });
+    if (post && post.user_id && post.user_id !== userId) {
+      const user = await this.prisma.users.findUnique({
+        where: { user_id: post.user_id },
+      });
+      if (user && user.expo_push_token) {
+        await this.notificationService.sendPushNotification(
+          user.expo_push_token,
+          `새 댓글이 달렸습니다: ${createCommentDto.content}`,
+        );
+      }
+    }
 
     if (createCommentDto.media && createCommentDto.media.length > 0) {
       const mediaData = createCommentDto.media.map((media) => ({

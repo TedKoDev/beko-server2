@@ -11,6 +11,7 @@ import { GamesModule } from './apis/games/games.module';
 import { LevelThresholdModule } from './apis/level';
 import { LikesModule } from './apis/likes';
 import { LogsModule } from './apis/logsdata';
+import { NotificationModule } from './apis/notification/notification.module';
 import { PointsModule } from './apis/point';
 import { PostsModule } from './apis/posts';
 import { ReportModule } from './apis/report';
@@ -46,6 +47,7 @@ import { WordModule } from './apis/word';
     SchoolModule,
     GamesModule,
     LevelThresholdModule,
+    NotificationModule,
   ],
 })
 export class V1Module {}
