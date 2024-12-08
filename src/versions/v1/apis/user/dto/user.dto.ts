@@ -1,4 +1,4 @@
-import { accountStatus, provider, role } from '@prisma/client'; // Prisma의 enum을 가져옵니다
+import { accountStatus, role, social_provider } from '@prisma/client'; // Prisma의 enum을 가져옵니다
 import {
   IsBoolean,
   IsDate,
@@ -16,8 +16,8 @@ export class SocialLoginDTO {
   @IsNumber()
   user_id: number;
 
-  @IsEnum(provider)
-  provider: provider;
+  @IsEnum(social_provider)
+  provider: social_provider;
 
   @IsString()
   provider_user_id: string;

@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { accountStatus } from '@prisma/client';
+import { accountStatus, social_provider } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as config from 'config';
 import { pbkdf2Sync } from 'crypto';
@@ -403,5 +403,89 @@ export class AuthService {
     // 비밀번호 비교 로직
     const isMatch = await bcrypt.compare(password, user.encrypted_password);
     return isMatch;
+  }
+
+  async validateSocialUser(
+    social_provider: social_provider,
+    providerUserId: string,
+    email: string,
+    name?: string,
+  ) {
+    try {
+      // 1. 기존 소셜 로그인 확인
+      const existingSocialLogin = await this.prisma.socialLogin.findFirst({
+        where: {
+          provider_user_id: providerUserId,
+          social_provider: social_provider,
+        },
+        include: {
+          user: true,
+        },
+      });
+
+      if (existingSocialLogin) {
+        return existingSocialLogin.user;
+      }
+
+      // 2. 이메일로 기존 사용자 확인
+      const existingUser = await this.prisma.users.findUnique({
+        where: { email },
+      });
+
+      if (existingUser) {
+        // 기존 사용자에 소셜 로그인 연동
+        await this.prisma.socialLogin.create({
+          data: {
+            user_id: existingUser.user_id,
+            social_provider: social_provider,
+            provider_user_id: providerUserId,
+          },
+        });
+        return existingUser;
+      }
+
+      // 3. 신규 사용자 생성
+      const newUser = await this.prisma.$transaction(async (prisma) => {
+        // 사용자 생성
+        const username =
+          name ||
+          `${social_provider.toLowerCase()}_${providerUserId.substring(0, 8)}`;
+        const user = await prisma.users.create({
+          data: {
+            email,
+            username: username,
+            encrypted_password: await bcrypt.hash(uuidv4(), 10),
+            is_email_verified: true,
+            role: ROLE.USER,
+            account_status: accountStatus.ACTIVE,
+            social_login: {
+              create: {
+                social_provider: social_provider,
+                provider_user_id: providerUserId,
+              },
+            },
+          },
+        });
+
+        // 신규 가입 포인트 지급
+        await prisma.point.create({
+          data: {
+            user_id: user.user_id,
+            points_change: 2000,
+            change_reason: `New user registration with ${social_provider}`,
+          },
+        });
+
+        return user;
+      });
+
+      return newUser;
+    } catch (error) {
+      console.error('Social login error:', error);
+      throw new HttpException(
+        '소셜 로그인 처리 중 오류가 발생했습니다',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

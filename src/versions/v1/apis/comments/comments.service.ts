@@ -1,4 +1,4 @@
-import { PrismaService } from '@/prisma';
+import { PrismaService } from '@/prisma/postsql-prisma.service';
 import { ROLE } from '@/types/v1';
 import {
   BadRequestException,
@@ -447,7 +447,7 @@ export class CommentsService {
         },
       });
 
-      // 선생님에게 포인트 지급
+      // 선생님에게 ���인트 지급
       await tx.users.update({
         where: { user_id: teacherId },
         data: { points: { increment: consultation.price } },

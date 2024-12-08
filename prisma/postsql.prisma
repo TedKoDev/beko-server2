@@ -118,7 +118,7 @@ enum AdBannerStatus {
 model socialLogin {
   social_login_id  Int        @id @default(autoincrement())
   user_id          Int
-  provider         provider
+  social_provider  social_provider
   provider_user_id String     @db.VarChar(255)
   created_at       DateTime   @default(now()) @db.Timestamp
   updated_at       DateTime?  @db.Timestamp
@@ -487,10 +487,11 @@ enum accountStatus {
   SUSPENDED
 }
 
-enum provider {
+enum social_provider {
   GOOGLE
   NAVER
   KAKAO
+  APPLE
 }
 
 enum postType {

@@ -182,7 +182,7 @@ export class UserService {
         social_login: user.social_login.map((social) => ({
           social_login_id: social.social_login_id,
           user_id: social.user_id,
-          provider: social.provider,
+          provider: social.social_provider,
           provider_user_id: social.provider_user_id,
           created_at: social.created_at,
           updated_at: social.updated_at,

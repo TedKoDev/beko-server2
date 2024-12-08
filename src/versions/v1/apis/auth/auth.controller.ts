@@ -8,6 +8,8 @@ import {
   Res,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { social_provider } from '@prisma/client';
+
 import { Response } from 'express';
 import { SlackService } from '../utils/slack/slack.service';
 import { AUTH_SERVICE_TOKEN, AuthService } from './auth.service';
@@ -79,5 +81,37 @@ export class AuthController {
   @Post('check-name')
   async checkName(@Body('name') name: string) {
     return this.authService.checkName(name);
+  }
+
+  @Post('social-login')
+  async socialLogin(
+    @Body()
+    dto: {
+      provider: social_provider;
+      providerUserId: string;
+      email: string;
+      name?: string;
+    },
+  ) {
+    const { provider, providerUserId, email, name } = dto;
+    const user = await this.authService.validateSocialUser(
+      provider,
+      providerUserId,
+      email,
+      name,
+    );
+
+    // JWT 토큰 생성
+    const payload = { userId: user.user_id, role: user.role };
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '1w' });
+
+    return {
+      access_token: accessToken,
+      user: {
+        user_id: user.user_id,
+        username: user.username,
+        email: user.email,
+      },
+    };
   }
 }

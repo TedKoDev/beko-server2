@@ -15,7 +15,7 @@ import { JwtStrategy } from './strategy';
     EmailModule,
     SlackModule,
     CountryModule,
-  ], // SlackModule 추가
+  ],
   providers: [AuthProvider, JwtStrategy, PrismaService, EmailService],
   controllers: [AuthController],
   exports: [AuthProvider, EmailService],
