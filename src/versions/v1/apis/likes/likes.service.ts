@@ -32,11 +32,17 @@ export class LikesService {
         if (post && post.user_id && post.user_id !== userId) {
           const user = await this.prisma.users.findUnique({
             where: { user_id: post.user_id },
+            select: {
+              expo_push_token: true,
+              notification_community: true, // 커뮤니티 알림 설정 확인
+            },
           });
-          if (user && user.expo_push_token) {
+
+          // 알림 설정이 true이고 expo_push_token이 있는 경우에만 알림 전송
+          if (user && user.expo_push_token && user.notification_community) {
             await this.notificationService.sendPushNotification(
               user.expo_push_token,
-              `게시글에 좋아요가 달렸습니다.`,
+              `Like in your post`,
             );
           }
         }
@@ -70,11 +76,17 @@ export class LikesService {
       if (post && post.user_id && post.user_id !== userId) {
         const user = await this.prisma.users.findUnique({
           where: { user_id: post.user_id },
+          select: {
+            expo_push_token: true,
+            notification_community: true, // 커뮤니티 알림 설정 확인
+          },
         });
-        if (user && user.expo_push_token) {
+
+        // 알림 설정이 true이고 expo_push_token이 있는 경우에만 알림 전송
+        if (user && user.expo_push_token && user.notification_community) {
           await this.notificationService.sendPushNotification(
             user.expo_push_token,
-            `게시글에 좋아요가 달렸습니다.`,
+            `Like in your post`,
           );
         }
       }
@@ -106,11 +118,17 @@ export class LikesService {
         if (comment && comment.user_id && comment.user_id !== userId) {
           const user = await this.prisma.users.findUnique({
             where: { user_id: comment.user_id },
+            select: {
+              expo_push_token: true,
+              notification_community: true, // 커뮤니티 알림 설정 확인
+            },
           });
-          if (user && user.expo_push_token) {
+
+          // 알림 설정이 true이고 expo_push_token이 있는 경우에만 알림 전송
+          if (user && user.expo_push_token && user.notification_community) {
             await this.notificationService.sendPushNotification(
               user.expo_push_token,
-              `댓글에 좋아요가 달렸습니다.`,
+              `Like in your comment`,
             );
           }
         }
@@ -144,11 +162,17 @@ export class LikesService {
       if (comment && comment.user_id && comment.user_id !== userId) {
         const user = await this.prisma.users.findUnique({
           where: { user_id: comment.user_id },
+          select: {
+            expo_push_token: true,
+            notification_community: true, // 커뮤니티 알림 설정 확인
+          },
         });
-        if (user && user.expo_push_token) {
+
+        // 알림 설정이 true이고 expo_push_token이 있는 경우에만 알림 전송
+        if (user && user.expo_push_token && user.notification_community) {
           await this.notificationService.sendPushNotification(
             user.expo_push_token,
-            `댓글에 좋아요가 달렸습니다.`,
+            `Like in your comment`,
           );
         }
       }

@@ -1,7 +1,13 @@
 import { PrismaService } from '@/prisma';
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { ROLE } from '@/types/v1/enums/role.enum';
+import {
+  BadRequestException,
+  HttpException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { CreateReportDto } from './dto/create-report.dto';
 import {
   PaginationQueryDto,
@@ -14,37 +20,68 @@ export class ReportService {
 
   // 신고 생성
   async createReport(createReportDto: CreateReportDto, reporterId: number) {
-    const { target_type, target_id, reported_user_id, reason } =
-      createReportDto;
+    console.log('createReportDto', createReportDto);
+    console.log('reporterId', reporterId);
 
-    try {
-      const report = await this.prisma.report.create({
-        data: {
-          target_type,
-          target_id,
-          reported_user_id,
-          reporter_user_id: reporterId,
-          reason,
-        },
-      });
-
-      return report;
-    } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
-        // Foreign key constraint failed
-        if (error.code === 'P2003') {
-          throw new HttpException(
-            'Invalid foreign key reference. The reported or reporter user ID does not exist.',
-            HttpStatus.BAD_REQUEST,
-          );
-        }
-      }
-      // 다른 예상치 못한 오류 처리
-      throw new HttpException(
-        'An unexpected error occurred while creating the report.',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    // 1. 신고자와 신고 대상이 같은 경우 체크
+    if (reporterId === createReportDto.reported_user_id) {
+      throw new BadRequestException('자기 자신을 신고할 수 없습니다.');
     }
+
+    // 2. 신고 대상 사용자 확인
+    let reportedUserId = createReportDto.reported_user_id;
+    console.log('reportedUserId', reportedUserId);
+    // / 3. targetType이 'GENERAL'인 경우 ADMIN 사용자 찾기
+    if (createReportDto.target_type === 'GENERAL') {
+      const adminUser = await this.prisma.users.findFirst({
+        where: { role: ROLE.ADMIN },
+      });
+      console.log('adminUser');
+
+      if (adminUser) {
+        reportedUserId = adminUser.user_id; // ADMIN 사용자 ID로 설정
+      } else {
+        throw new NotFoundException('신고를 처리할 ADMIN 사용자가 없습니다.');
+      }
+    }
+
+    // // 5. 이미 동일한 신고가 있는지 확인
+    // const existingReport = await this.prisma.report.findFirst({
+    //   where: {
+    //     reporter_user_id: reporterId,
+    //     reported_user_id: reportedUserId,
+    //     target_type: createReportDto.target_type,
+    //     target_id: createReportDto.target_id,
+    //     status: 'PENDING',
+    //   },
+    // });
+
+    // if (existingReport) {
+    //   throw new BadRequestException('이미 동일한 신고가 접수되어 있습니다.');
+    // }
+
+    // 6. 신고 생성
+    const report = await this.prisma.report.create({
+      data: {
+        target_type: createReportDto.target_type,
+        target_id: createReportDto.target_id,
+        reported_user_id: reportedUserId, // ADMIN 사용자 ID 사용
+        reporter_user_id: reporterId,
+        reason: createReportDto.reason,
+        status: 'PENDING',
+      },
+    });
+
+    return {
+      message: '신고가 접수되었습니다.',
+      report_id: report.report_id,
+    };
+  }
+  catch(error) {
+    if (error instanceof HttpException) {
+      throw error;
+    }
+    throw new InternalServerErrorException('신고 처리 중 오류가 발생했습니다.');
   }
 
   // 리포트 리스트 조회

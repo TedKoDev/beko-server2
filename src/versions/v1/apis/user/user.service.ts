@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateAgreementsDto } from './dto/update-agreements.dto';
 import { UpdateNotificationSettingsDto } from './dto/update-notification-settings.dto';
@@ -439,10 +440,7 @@ export class UserService {
       });
 
       if (!user) {
-        throw new HttpException(
-          '사용자를 찾을 수 없습니다',
-          HttpStatus.NOT_FOUND,
-        );
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
       return user;
@@ -451,7 +449,86 @@ export class UserService {
         throw error;
       }
       throw new HttpException(
-        '동의 설정 조회 중 오류가 발생했습니다',
+        'Agreement settings retrieval error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async updatePassword(
+    userId: number,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    console.log('updatePassword', currentPassword, newPassword);
+    try {
+      // 현재 사용자 정보 조회
+      const user = await this.prisma.users.findUnique({
+        where: { user_id: userId },
+      });
+
+      if (!user) {
+        console.log('user not found');
+        throw new NotFoundException('User not found');
+      }
+
+      // 소셜 로그인 사용자 체크
+      if (!user.encrypted_password) {
+        console.log('social login user');
+        throw new HttpException(
+          'Social login user cannot change password',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // 현재 비밀번호 확인
+      const isPasswordValid = await bcrypt.compare(
+        currentPassword,
+        user.encrypted_password,
+      );
+
+      if (!isPasswordValid) {
+        console.log('password not valid');
+        throw new HttpException(
+          'Current password is not valid',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // 새 비밀번호가 현재 비밀번호와 같은지 확인
+      if (currentPassword === newPassword) {
+        console.log('password same');
+        throw new HttpException(
+          'New password must be different from the current password',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // 새 비밀번호 암호화
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      console.log('hashedNewPassword', hashedNewPassword);
+      // 비밀번호 업데이트
+      await this.prisma.users.update({
+        where: { user_id: userId },
+        data: {
+          encrypted_password: hashedNewPassword,
+          updated_at: new Date(),
+        },
+      });
+
+      console.log('password updated');
+      return {
+        message: 'Password changed successfully',
+      };
+    } catch (error) {
+      console.log('error', error);
+      if (error instanceof HttpException) {
+        console.log('http exception');
+        throw error;
+      }
+      console.log('internal server error');
+      throw new HttpException(
+        'Password change error',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

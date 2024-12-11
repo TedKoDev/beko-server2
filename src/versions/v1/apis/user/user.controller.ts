@@ -23,6 +23,7 @@ import { DeactivateUserDto } from './dto/deactivate-user.dto';
 
 import { UpdateAgreementsDto } from './dto/update-agreements.dto';
 import { UpdateNotificationSettingsDto } from './dto/update-notification-settings.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { USER_SERVIE_TOKEN, UserService } from './user.service';
 
@@ -175,5 +176,19 @@ export class UserController {
   @Auth(['ANY'])
   async getAgreements(@Req() req: { user: { userId: number } }) {
     return this.userService.getAgreements(req.user.userId);
+  }
+
+  @Patch('update-password')
+  @Auth(['ANY'])
+  async updatePassword(
+    @Req() req: { user: { userId: number } },
+    @Body() updatePasswordDto: UpdatePasswordDto,
+  ) {
+    console.log('updatePasswordDto', updatePasswordDto);
+    return this.userService.updatePassword(
+      req.user.userId,
+      updatePasswordDto.currentPassword,
+      updatePasswordDto.newPassword,
+    );
   }
 }
