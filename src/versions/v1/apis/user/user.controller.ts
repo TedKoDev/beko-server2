@@ -55,6 +55,10 @@ export class UserController {
       username: dto.username,
       bio: dto.bio,
       profile_picture_url: dto.profile_picture_url,
+      country_id: dto.country_id,
+      terms_agreed: dto.terms_agreed,
+      privacy_agreed: dto.privacy_agreed,
+      marketing_agreed: dto.marketing_agreed,
     });
     return res.status(200).json(updatedUser);
   }

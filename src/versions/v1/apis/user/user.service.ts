@@ -27,12 +27,54 @@ export class UserService {
   }
 
   // 사용자 정보 수정
+  // async updateUser(
+  //   userId: number,
+  //   updateData: {
+  //     username: string;
+  //     bio: string;
+  //     profile_picture_url?: string;
+  //     country_id: number;
+  //     terms_agreed: boolean;
+  //     privacy_agreed: boolean;
+  //     marketing_agreed: boolean;
+  //   },
+  // ) {
+  //   // 중복된 username 확인
+  //   let finalUsername = updateData.username;
+  //   const existingUser = await this.prisma.users.findUnique({
+  //     where: { username: updateData.username },
+  //   });
+
+  //   if (existingUser && existingUser.user_id !== userId) {
+  //     const uniqueSuffix = `#${uuidv4().slice(0, 8)}`;
+  //     finalUsername = `${updateData.username}${uniqueSuffix}`;
+  //   }
+
+  //   // 사용자 정보 업데이트
+  //   return this.prisma.users.update({
+  //     where: { user_id: userId },
+  //     data: {
+  //       username: finalUsername,
+  //       bio: updateData.bio,
+  //       profile_picture_url: updateData.profile_picture_url,
+  //       country_id: updateData.country_id,
+  //       terms_agreed: updateData.terms_agreed,
+  //       privacy_agreed: updateData.privacy_agreed,
+  //       marketing_agreed: updateData.marketing_agreed,
+  //       updated_at: new Date(),
+  //     },
+  //   });
+  // }
   async updateUser(
     userId: number,
     updateData: {
       username: string;
       bio: string;
       profile_picture_url?: string;
+      country_id: number;
+      terms_agreed: boolean;
+      privacy_agreed: boolean;
+      marketing_agreed: boolean;
     },
   ) {
     // 중복된 username 확인
@@ -47,15 +89,58 @@ export class UserService {
     }
 
     // 사용자 정보 업데이트
-    return this.prisma.users.update({
+    const updatedUser = await this.prisma.users.update({
       where: { user_id: userId },
       data: {
         username: finalUsername,
         bio: updateData.bio,
         profile_picture_url: updateData.profile_picture_url,
+        country_id: updateData.country_id,
+        terms_agreed: updateData.terms_agreed,
+        privacy_agreed: updateData.privacy_agreed,
+        marketing_agreed: updateData.marketing_agreed,
         updated_at: new Date(),
       },
     });
+
+    // 국가 정보 조회
+    const country = await this.prisma.country.findUnique({
+      where: { country_id: updateData.country_id },
+      select: {
+        country_id: true,
+        country_code: true,
+        country_name: true,
+        flag_icon: true,
+      },
+    });
+
+    // 통계 정보 조회
+    const stats = await this.prisma.$transaction([
+      this.prisma.post.count({ where: { user_id: userId, deleted_at: null } }),
+      this.prisma.comment.count({
+        where: { user_id: userId, deleted_at: null },
+      }),
+      this.prisma.like.count({ where: { user_id: userId, deleted_at: null } }),
+      this.prisma.follow.count({
+        where: { follower_id: userId, deleted_at: null },
+      }),
+      this.prisma.follow.count({
+        where: { following_id: userId, deleted_at: null },
+      }),
+    ]);
+
+    // 응답 형식 구성
+    return {
+      ...updatedUser,
+      country,
+      stats: {
+        postCount: stats[0],
+        commentCount: stats[1],
+        likedPostsCount: stats[2],
+        followingCount: stats[3],
+        followersCount: stats[4],
+      },
+    };
   }
 
   // 사용자 이름 중복 확인
