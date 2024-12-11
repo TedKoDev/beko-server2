@@ -1,6 +1,13 @@
 import { PrismaService } from '@/prisma';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
+import { UpdateAgreementsDto } from './dto/update-agreements.dto';
+import { UpdateNotificationSettingsDto } from './dto/update-notification-settings.dto';
 import { UserDTO } from './dto/user.dto';
 
 export const USER_SERVIE_TOKEN = 'USER_SERVIE_TOKEN';
@@ -201,8 +208,11 @@ export class UserService {
 
   // 현재 로그인한 사용자의 정보 조회
   async getCurrentUser(userId: number) {
+    console.log('getCurrentUser', userId);
     const user = await this.prisma.users.findUnique({
-      where: { user_id: userId },
+      where: {
+        user_id: userId,
+      },
       include: {
         post: {
           where: { deleted_at: null },
@@ -223,8 +233,10 @@ export class UserService {
     });
 
     if (!user) {
+      console.log('user not found');
       throw new NotFoundException('User not found');
     }
+    console.log('user', user);
 
     return {
       user_id: user.user_id,
@@ -240,6 +252,15 @@ export class UserService {
       account_status: user.account_status,
       created_at: user.created_at,
       last_login_at: user.last_login_at,
+      social_login: user.social_login.map((social) => ({
+        social_login_id: social.social_login_id,
+        user_id: social.user_id,
+        provider: social.social_provider,
+        provider_user_id: social.provider_user_id,
+        created_at: social.created_at,
+        updated_at: social.updated_at,
+        deleted_at: social.deleted_at,
+      })),
       country: user.country
         ? {
             country_id: user.country.country_id,
@@ -309,5 +330,130 @@ export class UserService {
         deactivatedAt: new Date(),
       };
     });
+  }
+
+  // 알림 설정 업데이트
+  async updateNotificationSettings(
+    userId: number,
+    settings: UpdateNotificationSettingsDto,
+  ) {
+    try {
+      const updatedUser = await this.prisma.users.update({
+        where: { user_id: userId },
+        data: {
+          notification_benefit: settings.notification_benefit,
+          notification_benefit_at: settings.notification_benefit
+            ? new Date()
+            : null,
+          notification_community: settings.notification_community,
+          notification_community_at: settings.notification_community
+            ? new Date()
+            : null,
+          marketing_agreed: settings.notification_benefit,
+          marketing_agreed_at: new Date(),
+        },
+      });
+
+      return {
+        notification_benefit: updatedUser.notification_benefit,
+        notification_community: updatedUser.notification_community,
+        message: '알림 설정이 업데이트되었습니다.',
+      };
+    } catch (error) {
+      throw new HttpException(
+        '알림 설정 업데이트 중 오류가 발생했습니다',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // 알림 설정 조회
+  async getNotificationSettings(userId: number) {
+    try {
+      const user = await this.prisma.users.findUnique({
+        where: { user_id: userId },
+        select: {
+          notification_benefit: true,
+          notification_community: true,
+          notification_benefit_at: true,
+          notification_community_at: true,
+        },
+      });
+
+      if (!user) {
+        throw new HttpException(
+          '사용자를 찾을 수 없습니다',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        '알림 설정 조회 중 오류가 발생했습니다',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // 마케팅 동의 설정 업데이트
+  async updateAgreements(userId: number, agreements: UpdateAgreementsDto) {
+    try {
+      const updatedUser = await this.prisma.users.update({
+        where: { user_id: userId },
+        data: {
+          marketing_agreed: agreements.marketing_agreed,
+          marketing_agreed_at: agreements.marketing_agreed ? new Date() : null,
+        },
+      });
+
+      return {
+        marketing_agreed: updatedUser.marketing_agreed,
+        marketing_agreed_at: updatedUser.marketing_agreed_at,
+        message: '마케팅 수신 동의 설정이 업데이트되었습니다.',
+      };
+    } catch (error) {
+      throw new HttpException(
+        '동의 설정 업데이트 중 오류가 발생했습니다',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // 동의 설정 조회
+  async getAgreements(userId: number) {
+    try {
+      const user = await this.prisma.users.findUnique({
+        where: { user_id: userId },
+        select: {
+          terms_agreed: true,
+          privacy_agreed: true,
+          marketing_agreed: true,
+          terms_agreed_at: true,
+          privacy_agreed_at: true,
+          marketing_agreed_at: true,
+        },
+      });
+
+      if (!user) {
+        throw new HttpException(
+          '사용자를 찾을 수 없습니다',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        '동의 설정 조회 중 오류가 발생했습니다',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

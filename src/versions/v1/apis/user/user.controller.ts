@@ -5,22 +5,24 @@ import {
   Inject,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Query,
   Req,
   Res,
   UnauthorizedException,
-  UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
 
 import { Auth } from '@/decorators';
 import { ROLE } from '@/types/v1';
 
-import { JwtAuthGuard } from '../auth';
 import { AuthService } from '../auth/auth.service';
 import { PaginationQueryDto } from './dto';
 import { DeactivateUserDto } from './dto/deactivate-user.dto';
+
+import { UpdateAgreementsDto } from './dto/update-agreements.dto';
+import { UpdateNotificationSettingsDto } from './dto/update-notification-settings.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { USER_SERVIE_TOKEN, UserService } from './user.service';
 
@@ -107,9 +109,12 @@ export class UserController {
   }
 
   @Get('me')
-  @UseGuards(JwtAuthGuard)
-  async getCurrentUser(@Req() req) {
+  @Auth(['ANY'])
+  async getCurrentUser(@Req() req: { user: { userId: number } }) {
+    // console.log('me', req);
     const userId = req.user.userId; // JWT에서 추출한 userId
+
+    console.log('me', userId);
     return this.userService.getCurrentUser(userId);
   }
 
@@ -132,5 +137,43 @@ export class UserController {
     }
 
     return this.userService.deactivateUser(req.user.userId);
+  }
+
+  // 알림 설정 업데이트
+  @Patch('notification-settings')
+  @Auth(['ANY'])
+  async updateNotificationSettings(
+    @Req() req: { user: { userId: number } },
+    @Body() settings: UpdateNotificationSettingsDto,
+  ) {
+    console.log('settings', settings);
+    return this.userService.updateNotificationSettings(
+      req.user.userId,
+      settings,
+    );
+  }
+
+  // 알림 설정 조회
+  @Get('notification-settings')
+  @Auth(['ANY'])
+  async getNotificationSettings(@Req() req: { user: { userId: number } }) {
+    return this.userService.getNotificationSettings(req.user.userId);
+  }
+
+  // 마케팅 동의 설정 업데이트
+  @Patch('agreements')
+  @Auth(['ANY'])
+  async updateAgreements(
+    @Req() req: { user: { userId: number } },
+    @Body() agreements: UpdateAgreementsDto,
+  ) {
+    return this.userService.updateAgreements(req.user.userId, agreements);
+  }
+
+  // 동의 설정 조회
+  @Get('agreements')
+  @Auth(['ANY'])
+  async getAgreements(@Req() req: { user: { userId: number } }) {
+    return this.userService.getAgreements(req.user.userId);
   }
 }

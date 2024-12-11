@@ -29,9 +29,9 @@ model log {
 model users {
   user_id             Int              @id @default(autoincrement())
   username            String           @unique @db.VarChar(50)
-  email               String           @unique @db.VarChar(100)
+  email               String           @db.VarChar(100)
   bio                 String?          @db.Text
-  encrypted_password  String           @db.VarChar(255)
+  encrypted_password  String?           @db.VarChar(255)
   profile_picture_url String?          @db.VarChar(255)
   phone_number        String?          @db.VarChar(20)
   email_verification_token String?     @db.VarChar(255)
@@ -73,6 +73,23 @@ model users {
   gameProgress        UserGameProgress[]
   imageMatchingAnswers ImageMatchingAnswer[]
   expo_push_token     String?        @db.VarChar(255)
+
+  // 약관 동의 관련 필드
+  terms_agreed        Boolean          @default(false)  // 이용약관 동의
+  privacy_agreed      Boolean          @default(false)  // 개인정보 수집 및 이용 동의
+  marketing_agreed    Boolean          @default(false)  // 마케팅 정보 수신 동의
+  terms_agreed_at     DateTime?        @db.Timestamp    // 약관 동의 일시
+  privacy_agreed_at   DateTime?        @db.Timestamp    // 개인정보 동의 일시
+  marketing_agreed_at DateTime?        @db.Timestamp    // 마케팅 동의 일시
+
+  // 앱 알림 설정 관련 필드
+  notification_benefit Boolean         @default(true)   // 혜택 및 이벤트 알림
+  notification_benefit_at DateTime?    @db.Timestamp    // 혜택 및 이벤트 알림 동의 일시
+  notification_community Boolean       @default(true)   // 커뮤니티 활동 알림
+  notification_community_at DateTime?    @db.Timestamp    // 커뮤니티 활동 알림 동의 일시
+  
+
+  @@unique([email, encrypted_password])
 }
 
 
@@ -120,10 +137,14 @@ model socialLogin {
   user_id          Int
   social_provider  social_provider
   provider_user_id String     @db.VarChar(255)
+  email            String     @db.VarChar(100)
   created_at       DateTime   @default(now()) @db.Timestamp
   updated_at       DateTime?  @db.Timestamp
   deleted_at       DateTime?  @db.Timestamp
   user             users      @relation(fields: [user_id], references: [user_id])
+
+  @@unique([social_provider, provider_user_id])
+  @@unique([social_provider, email])
 }
 
 model follow {
@@ -186,7 +207,7 @@ model category {
 model wordlist {
   word_id        Int       @id @default(autoincrement())
   word           String    @db.VarChar(255)  @unique
-  part_of_speech String    @db.VarChar(50)  // ��사, 명사, 형용사 등
+  part_of_speech String    @db.VarChar(50)  // 사, 명사, 형용사 등
   meaning_en     String    @db.VarChar(255)  // 영어 의미
   example_sentence String?  @db.Text         // 예시 문장
   example_translation String? @db.Text       // 예시 문장 영어 번역 (선택적)

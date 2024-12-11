@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsEmail,
   IsNotEmpty,
   IsNumber,
@@ -23,4 +24,16 @@ export class RegisterUserDto {
   @IsNumber()
   @IsNotEmpty()
   country_id: number;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  term_agreement: boolean;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  privacy_agreement: boolean;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  marketing_agreement: boolean;
 }

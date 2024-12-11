@@ -15,6 +15,7 @@ import * as dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 import { CountryService } from '../country/country.service';
 import { EmailService } from '../email';
+import { UpdateNotificationSettingsDto } from './dto/notification-settings.dto';
 
 export const AUTH_SERVICE_TOKEN = 'AUTH_SERVICE_TOKEN';
 
@@ -34,12 +35,23 @@ export class AuthService {
     password: string,
     name: string,
     country_id: number,
+    term_agreement: boolean,
+    privacy_agreement: boolean,
+    marketing_agreement: boolean,
   ) {
     try {
       console.log('country_id', country_id);
+      console.log('term_agreement', term_agreement);
+      console.log('privacy_agreement', privacy_agreement);
+      console.log('marketing_agreement', marketing_agreement);
 
-      const existingEmailUser = await this.prisma.users.findUnique({
-        where: { email },
+      const existingEmailUser = await this.prisma.users.findFirst({
+        where: {
+          email,
+          social_login: {
+            none: {}, // 소셜 로그인이 아닌 경우만 체크
+          },
+        },
       });
 
       if (existingEmailUser) {
@@ -61,6 +73,10 @@ export class AuthService {
         const uniqueSuffix = `#${uuidv4().slice(0, 8)}`;
         finalUsername = `${name}${uniqueSuffix}`;
       }
+      let notification_benefit = true;
+      if (marketing_agreement === false) {
+        notification_benefit = false;
+      }
 
       const user = await this.prisma.users.create({
         data: {
@@ -75,6 +91,10 @@ export class AuthService {
           // account_status: accountStatus.INACTIVE,
           account_status: accountStatus.ACTIVE,
           country_id: country_id,
+          terms_agreed: term_agreement,
+          privacy_agreed: privacy_agreement,
+          marketing_agreed: marketing_agreement,
+          notification_benefit: notification_benefit,
         },
       });
 
@@ -132,8 +152,11 @@ export class AuthService {
 
   // 로그인
   async loginUser(email: string, password: string) {
-    const user = await this.prisma.users.findUnique({
-      where: { email },
+    const user = await this.prisma.users.findFirst({
+      where: {
+        email,
+        encrypted_password: { not: null }, // 일반 회원가입 사용자만 조회
+      },
     });
 
     if (!user) {
@@ -161,7 +184,6 @@ export class AuthService {
       user: {
         user_id: user.user_id,
         username: user.username,
-        // 추가 사용자 정보
       },
     };
   }
@@ -245,7 +267,7 @@ export class AuthService {
     return { message: 'Email confirmed successfully!' };
   }
 
-  // 유저레벨 업데이트
+  // 유저레벨 업데트
   private async updateUserLevel(userId: number) {
     const [postsCount, commentsCount, likesCount, user] = await Promise.all([
       this.prisma.post.count({ where: { user_id: userId, deleted_at: null } }),
@@ -340,8 +362,14 @@ export class AuthService {
 
   async checkEmail(email: string) {
     try {
-      const existingUser = await this.prisma.users.findUnique({
-        where: { email },
+      // 일반 회원가입 사용자만 확인
+      const existingUser = await this.prisma.users.findFirst({
+        where: {
+          email,
+          social_login: {
+            none: {}, // 소셜 로그인이 아닌 경우만 체크
+          },
+        },
       });
 
       if (existingUser) {
@@ -406,17 +434,19 @@ export class AuthService {
   }
 
   async validateSocialUser(
-    social_provider: social_provider,
+    provider: social_provider,
     providerUserId: string,
     email: string,
     name?: string,
   ) {
     try {
-      // 1. 기존 소셜 로그인 확인
+      // 1. 동일한 소셜 로그인 정보가 있는지만 확인
       const existingSocialLogin = await this.prisma.socialLogin.findFirst({
         where: {
-          provider_user_id: providerUserId,
-          social_provider: social_provider,
+          AND: [
+            { social_provider: provider },
+            { provider_user_id: providerUserId },
+          ],
         },
         include: {
           user: true,
@@ -427,41 +457,25 @@ export class AuthService {
         return existingSocialLogin.user;
       }
 
-      // 2. 이메일로 기존 사용자 확인
-      const existingUser = await this.prisma.users.findUnique({
-        where: { email },
-      });
-
-      if (existingUser) {
-        // 기존 사용자에 소셜 로그인 연동
-        await this.prisma.socialLogin.create({
-          data: {
-            user_id: existingUser.user_id,
-            social_provider: social_provider,
-            provider_user_id: providerUserId,
-          },
-        });
-        return existingUser;
-      }
-
-      // 3. 신규 사용자 생성
+      // 2. 새로운 소셜 로그인 사용자 생성
       const newUser = await this.prisma.$transaction(async (prisma) => {
-        // 사용자 생성
-        const username =
-          name ||
-          `${social_provider.toLowerCase()}_${providerUserId.substring(0, 8)}`;
+        const username = await this.generateUniqueUsername(
+          name || `${provider.toLowerCase()}_user`,
+        );
+
         const user = await prisma.users.create({
           data: {
             email,
-            username: username,
-            encrypted_password: await bcrypt.hash(uuidv4(), 10),
+            username,
+            // encrypted_password: null, // 소셜 로그인은 비밀번호 없음
             is_email_verified: true,
             role: ROLE.USER,
             account_status: accountStatus.ACTIVE,
             social_login: {
               create: {
-                social_provider: social_provider,
+                social_provider: provider,
                 provider_user_id: providerUserId,
+                email: email,
               },
             },
           },
@@ -472,7 +486,7 @@ export class AuthService {
           data: {
             user_id: user.user_id,
             points_change: 2000,
-            change_reason: `New user registration with ${social_provider}`,
+            change_reason: `New user registration with ${provider}`,
           },
         });
 
@@ -484,6 +498,110 @@ export class AuthService {
       console.error('Social login error:', error);
       throw new HttpException(
         '소셜 로그인 처리 중 오류가 발생했습니다',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  private async generateUniqueUsername(baseUsername: string): Promise<string> {
+    try {
+      // 특수문자 및 공백 제거, 소문자로 변환
+      const sanitizedUsername = baseUsername
+        .toLowerCase()
+        .replace(/[^\w\s]/g, '')
+        .replace(/\s+/g, '_');
+
+      // 기본 username으로 먼저 시도
+      let username = sanitizedUsername;
+      let counter = 1;
+
+      while (true) {
+        const existingUser = await this.prisma.users.findUnique({
+          where: { username },
+        });
+
+        if (!existingUser) {
+          return username;
+        }
+
+        // 중복되는 경우 숫자를 붙여서 재시도
+        username = `${sanitizedUsername}_${counter}`;
+        counter++;
+
+        // 안전장치: 너무 많은 시도를 방지
+        if (counter > 1000) {
+          throw new HttpException(
+            '사용자 이름 생성에 실패했습니다',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Username generation error:', error);
+      throw new HttpException(
+        '사용자 이름 생성 중 오류가 발생했습니다',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async updateNotificationSettings(
+    userId: number,
+    settings: UpdateNotificationSettingsDto,
+  ) {
+    try {
+      const updatedUser = await this.prisma.users.update({
+        where: { user_id: userId },
+        data: {
+          notification_benefit: settings.notification_benefit,
+          notification_community: settings.notification_community,
+          notification_benefit_at: new Date(),
+          notification_community_at: new Date(),
+          marketing_agreed: settings.notification_benefit,
+          marketing_agreed_at: new Date(),
+        },
+      });
+
+      return {
+        notification_benefit: updatedUser.notification_benefit,
+        notification_community: updatedUser.notification_community,
+        message: '알림 설정이 업데이트되었습니다.',
+      };
+    } catch (error) {
+      throw new HttpException(
+        '알림 설정 업데이트 중 오류가 발생했습니다',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // 알림 설정 조회 메서드
+  async getNotificationSettings(userId: number) {
+    try {
+      const user = await this.prisma.users.findUnique({
+        where: { user_id: userId },
+        select: {
+          notification_benefit: true,
+          notification_community: true,
+          notification_benefit_at: true,
+          notification_community_at: true,
+        },
+      });
+
+      if (!user) {
+        throw new HttpException(
+          '사용자를 찾을 수 없습니다',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        '알림 설정 조회 중 오류가 발생했습니다',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
