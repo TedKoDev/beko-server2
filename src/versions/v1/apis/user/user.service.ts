@@ -5,9 +5,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateAgreementsDto } from './dto/update-agreements.dto';
+
 import { UpdateNotificationSettingsDto } from './dto/update-notification-settings.dto';
 import { UserDTO } from './dto/user.dto';
 
@@ -253,6 +255,9 @@ export class UserService {
       account_status: user.account_status,
       created_at: user.created_at,
       last_login_at: user.last_login_at,
+      terms_agreed: user.terms_agreed,
+      privacy_agreed: user.privacy_agreed,
+      marketing_agreed: user.marketing_agreed,
       social_login: user.social_login.map((social) => ({
         social_login_id: social.social_login_id,
         user_id: social.user_id,
@@ -529,6 +534,51 @@ export class UserService {
       console.log('internal server error');
       throw new HttpException(
         'Password change error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async updateInitialAgreements(
+    userId: number,
+    agreements: UpdateAgreementsDto,
+  ) {
+    try {
+      const currentTime = new Date();
+
+      const updatedUser = await this.prisma.users.update({
+        where: { user_id: userId },
+        data: {
+          terms_agreed: agreements.terms_agreed,
+          privacy_agreed: agreements.privacy_agreed,
+          marketing_agreed: agreements.marketing_agreed,
+          terms_agreed_at: agreements.terms_agreed ? currentTime : null,
+          privacy_agreed_at: agreements.privacy_agreed ? currentTime : null,
+          marketing_agreed_at: agreements.marketing_agreed ? currentTime : null,
+        },
+      });
+
+      return {
+        success: true,
+        data: {
+          terms_agreed: updatedUser.terms_agreed,
+          privacy_agreed: updatedUser.privacy_agreed,
+          marketing_agreed: updatedUser.marketing_agreed,
+          terms_agreed_at: updatedUser.terms_agreed_at,
+          privacy_agreed_at: updatedUser.privacy_agreed_at,
+          marketing_agreed_at: updatedUser.marketing_agreed_at,
+        },
+        message: '약관 동의 정보가 성공적으로 저장되었습니다.',
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw new HttpException(
+          '사용자 정보 업데이트 중 오류가 발생했습니다.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      throw new HttpException(
+        '서버 오류가 발생했습니다.',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

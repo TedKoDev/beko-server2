@@ -191,4 +191,16 @@ export class UserController {
       updatePasswordDto.newPassword,
     );
   }
+
+  @Post('initial-agreements')
+  @Auth(['ANY'])
+  async updateInitialAgreements(
+    @Req() req: { user: { userId: number } },
+    @Body() agreements: UpdateAgreementsDto,
+  ) {
+    return this.userService.updateInitialAgreements(
+      req.user.userId,
+      agreements,
+    );
+  }
 }
