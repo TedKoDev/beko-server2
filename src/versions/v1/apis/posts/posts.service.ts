@@ -927,6 +927,7 @@ export class PostsService {
       category_id: post.category_id,
       category_name: post.category?.category_name,
       type: post.type,
+      admin_pick: post.admin_pick,
       status: post.status,
       views: post.views,
       likes: post.likes,
