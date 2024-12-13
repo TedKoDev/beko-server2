@@ -21,7 +21,6 @@ export class PostsService {
     private pointsService: PointsService, // PointsService 주입
     private jwtService: JwtService,
   ) {}
-
   // 게시글 생성
   async create(userId: number, createPostDto: CreatePostDto, isDraft = false) {
     return this.prisma.$transaction(async (tx) => {

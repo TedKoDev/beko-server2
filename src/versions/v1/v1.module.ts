@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { AdBannerModule } from './apis/ad-banner';
 import { AdminBlockModule } from './apis/admin-block';
+import { AdminDashboardModule } from './apis/admin-dashboard/admin-dashboard.module';
 import { AuthModule } from './apis/auth';
 import { CommentsModule } from './apis/comments';
 import { CountryModule } from './apis/country/country.module';
@@ -29,6 +30,7 @@ import { WordModule } from './apis/word';
     UserModule,
     UserBlockModule,
     AdminBlockModule,
+    AdminDashboardModule,
     AdBannerModule,
     PostsModule,
     CommentsModule,
