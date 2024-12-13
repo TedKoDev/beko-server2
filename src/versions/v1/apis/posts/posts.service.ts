@@ -1086,7 +1086,8 @@ export class PostsService {
       teacher_id,
       status, // consultationStatus 필터링을 위해 추가
     } = paginationQuery;
-
+    console.log('userId', userId);
+    console.log('userRole', userRole);
     const skip = (page - 1) * limit;
 
     let where: Prisma.postWhereInput = {
@@ -1095,7 +1096,7 @@ export class PostsService {
     };
 
     // ADMIN이 아닌 경우 본인이 관련된 게시글만 조회 가능
-    if (userRole !== 'ADMIN') {
+    if (userRole !== 'ADMIN' && userRole !== 'TEACHER') {
       where = {
         ...where,
         OR: [
@@ -1154,7 +1155,11 @@ export class PostsService {
           },
           post_consultation: {
             include: {
-              teacher: true,
+              teacher: {
+                include: {
+                  country: true,
+                },
+              },
             },
           },
           category: true,
@@ -1191,13 +1196,20 @@ export class PostsService {
       comment_count: post._count.comment,
       post_content: {
         title: post.post_consultation.title,
+        content: post.post_consultation.content,
         price: post.post_consultation.price,
         status: post.post_consultation.status,
         student_id: post.post_consultation.student_id,
         teacher_id: post.post_consultation.teacher_id,
-        teacher_name: post.post_consultation.teacher?.username,
-        teacher_profile_picture_url:
-          post.post_consultation.teacher?.profile_picture_url,
+        teacher: post.post_consultation.teacher && {
+          user_id: post.post_consultation.teacher.user_id,
+          username: post.post_consultation.teacher.username,
+          profile_picture_url:
+            post.post_consultation.teacher.profile_picture_url,
+          level: post.post_consultation.teacher.level,
+          country: post.post_consultation.teacher.country,
+          country_flag_icon: post.post_consultation.teacher.country.flag_icon,
+        },
         completed_at: post.post_consultation.completed_at,
       },
       created_at: post.created_at,
@@ -1268,6 +1280,7 @@ export class PostsService {
     // 권한 체크
     if (
       userRole !== 'ADMIN' &&
+      userRole !== 'TEACHER' &&
       userId !== post.post_consultation.student_id &&
       userId !== post.post_consultation.teacher_id
     ) {
