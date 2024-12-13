@@ -1337,4 +1337,12 @@ export class PostsService {
       updated_at: post.updated_at,
     };
   }
+
+  // 관리자 추천 게시글 설정/해제
+  async adminPickPost(postId: number) {
+    return this.prisma.post.update({
+      where: { post_id: postId },
+      data: { admin_pick: true },
+    });
+  }
 }

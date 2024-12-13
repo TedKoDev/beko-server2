@@ -130,4 +130,10 @@ export class PostsController {
   getCategoriesByTopic(@Param('topicId') topicId: number) {
     return this.postsService.getCategoriesByTopic(topicId);
   }
+
+  @Auth(['ANY'])
+  @Post('admin-pick/:id')
+  adminPickPost(@Param('id') id: number) {
+    return this.postsService.adminPickPost(id);
+  }
 }
