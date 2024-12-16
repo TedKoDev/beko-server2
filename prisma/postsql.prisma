@@ -72,7 +72,7 @@ model users {
   teacherConsultations post_consultation[] @relation("TeacherConsultation")
   gameProgress        UserGameProgress[]
   imageMatchingAnswers ImageMatchingAnswer[]
-  userWord            UserWord[]
+  userWord            user_word[]
   expo_push_token     String?        @db.VarChar(255)
 
   // 약관 동의 관련 필드
@@ -204,7 +204,8 @@ model category {
   topic          topic     @relation(fields: [topic_id], references: [topic_id])
   post           post[]
 }
-model UserWord {
+
+model user_word {
   id         Int       @id @default(autoincrement())
   user_id    Int
   word_id    Int
@@ -235,7 +236,7 @@ model wordlist {
   deleted_at     DateTime? @db.Timestamp
   selectedWords  selected_words[] // 반대 관계 필드 추가
 
-  UserWord UserWord[]
+  user_word user_word[]
 }
 
 model selected_words {

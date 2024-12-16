@@ -13,6 +13,7 @@ export class CountryController {
   @Public()
   @Get('list')
   async findAll() {
+    console.log('findAll');
     try {
       const countries = await this.countryService.findAll();
       return {

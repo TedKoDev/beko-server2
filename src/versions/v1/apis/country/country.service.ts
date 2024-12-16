@@ -8,6 +8,7 @@ export class CountryService {
 
   // 모든 국가 조회
   async findAll() {
+    console.log('findAll service');
     try {
       const countries = await this.prisma.country.findMany({
         where: { deleted_at: null },
