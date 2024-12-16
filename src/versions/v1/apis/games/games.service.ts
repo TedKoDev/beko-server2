@@ -28,7 +28,6 @@ export class GamesService {
       data: { deleted_at: new Date() },
     });
   }
-
   async getAllImageMatchingQuestionListwithPagenation(
     gameTypeId: number,
     level: number | null, // level을 선택적으로 변경
@@ -36,7 +35,18 @@ export class GamesService {
     limit: number,
   ) {
     console.log(gameTypeId, level, page, limit);
-    return this.prisma.gameQuestion.findMany({
+
+    // 전체 질문 수 조회
+    const totalCount = await this.prisma.gameQuestion.count({
+      where: {
+        game_type_id: gameTypeId,
+        ...(level !== null && { level }), // level이 null이 아닐 경우에만 추가
+        deleted_at: null,
+      },
+    });
+
+    // 현재 페이지의 질문 목록 조회
+    const questions = await this.prisma.gameQuestion.findMany({
       where: {
         game_type_id: gameTypeId,
         ...(level !== null && { level }), // level이 null이 아닐 경우에만 추가
@@ -45,6 +55,11 @@ export class GamesService {
       skip: (page - 1) * limit,
       take: limit,
     });
+
+    return {
+      totalCount, // 전체 질문 수
+      questions, // 현재 페이지의 질문 목록
+    };
   }
 
   async getImageMatchingQuestions(
