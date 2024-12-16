@@ -3,7 +3,8 @@ INSERT INTO public."topic" (title, created_at, updated_at, deleted_at) VALUES
 ('1:1 Inquiry', NOW(), NULL, NULL),
 ('Community', NOW(), NULL, NULL),
 ('Korean Language Learning', NOW(), NULL, NULL),
-('Korean Culture', NOW(), NULL, NULL);
+('Korean Culture', NOW(), NULL, NULL),
+('Notice', NOW(), NULL, NULL);
 
 -- Insert dummy data into the category table
 

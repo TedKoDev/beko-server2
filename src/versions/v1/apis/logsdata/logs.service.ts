@@ -6,6 +6,18 @@ import { LogType } from '@prisma/client';
 export class LogsService {
   constructor(private prisma: PrismaService) {}
 
+  async createYoutubeLink(link: string, name: string, topic: string) {
+    const youtubeLink = await this.prisma.youtubelink.create({
+      data: {
+        link,
+        name,
+        topic,
+      },
+    });
+
+    return youtubeLink;
+  }
+
   async getLogCount(type: LogType) {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // 오늘 날짜의 시작시간으로 설정

@@ -26,16 +26,16 @@ export class AdBannerController {
     return this.adBannerService.createAdBanner(createAdBannerDto);
   }
 
-  @Auth(['ADMIN'])
+  @Auth(['ANY'])
   @Get()
   findAll(@Query() paginationQuery: PaginationQueryDto) {
     return this.adBannerService.findAll(paginationQuery);
   }
 
-  @Auth(['ADMIN'])
+  @Auth(['ANY'])
   @Get(':id')
-  findOne(@Param('id') id: number) {
-    return this.adBannerService.findOne(id);
+  findOne(@Param('id') id: number, @Query('fromApp') fromApp: boolean) {
+    return this.adBannerService.findOne(id, fromApp);
   }
 
   @Auth(['ADMIN'])

@@ -72,6 +72,7 @@ model users {
   teacherConsultations post_consultation[] @relation("TeacherConsultation")
   gameProgress        UserGameProgress[]
   imageMatchingAnswers ImageMatchingAnswer[]
+  userWord            UserWord[]
   expo_push_token     String?        @db.VarChar(255)
 
   // 약관 동의 관련 필드
@@ -114,6 +115,7 @@ model AdBanner {
   company_name       String
   description        String
   contract_period    Int
+  link               String?
   contract_date      DateTime
   start_date         DateTime
   end_date           DateTime
@@ -202,6 +204,22 @@ model category {
   topic          topic     @relation(fields: [topic_id], references: [topic_id])
   post           post[]
 }
+model UserWord {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  word_id    Int
+  notes      String?   @db.Text               // 유저가 추가한 메모나 노트 (선택적)
+  created_at DateTime  @default(now()) @db.Timestamp
+  updated_at DateTime? @db.Timestamp
+  deleted_at DateTime? @db.Timestamp
+
+  user       users     @relation(fields: [user_id], references: [user_id])
+  word       wordlist  @relation(fields: [word_id], references: [word_id])
+
+  @@unique([user_id, word_id])  // 유저당 단어 중복 방지
+  @@index([user_id])
+  @@index([word_id])
+}
 
 
 model wordlist {
@@ -216,6 +234,8 @@ model wordlist {
   updated_at     DateTime? @db.Timestamp
   deleted_at     DateTime? @db.Timestamp
   selectedWords  selected_words[] // 반대 관계 필드 추가
+
+  UserWord UserWord[]
 }
 
 model selected_words {

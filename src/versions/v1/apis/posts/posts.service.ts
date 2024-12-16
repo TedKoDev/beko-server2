@@ -741,6 +741,7 @@ export class PostsService {
           username: post.user.username,
           user_profile_picture_url: post.user.profile_picture_url,
           user_level: post.user.level,
+          admin_pick: post.admin_pick,
           country_id: post.user.country_id,
           country_code: post.user.country.country_code,
           country_name: post.user.country.country_name,
@@ -1096,7 +1097,7 @@ export class PostsService {
       deleted_at: null,
     };
 
-    // ADMIN이 아닌 경우 본인이 관련된 게시글만 조회 가능
+    // ADMIN이나 TEACHER가 아닌 경우 본인이 관련된 게시글만 조회 가능
     if (userRole !== 'ADMIN' && userRole !== 'TEACHER') {
       where = {
         ...where,

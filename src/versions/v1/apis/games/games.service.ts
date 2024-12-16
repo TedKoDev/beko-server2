@@ -8,6 +8,14 @@ import { SubmitAnswerDto } from './dto/submit-answer.dto';
 export class GamesService {
   constructor(private prisma: PrismaService) {}
 
+  async createGameQuestion(data: any) {
+    const question = await this.prisma.gameQuestion.create({
+      data,
+    });
+
+    return question;
+  }
+
   async getImageMatchingQuestions(
     gameTypeId: number,
     level: number,

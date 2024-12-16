@@ -44,4 +44,8 @@ export class UpdateAdBannerDto {
   @IsOptional()
   @IsEnum(AdBannerStatus)
   status?: AdBannerStatus;
+
+  @IsOptional()
+  @IsString()
+  link?: string;
 }

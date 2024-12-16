@@ -54,10 +54,21 @@ export class AdBannerService {
     });
   }
 
-  async findOne(id: number) {
-    return this.prisma.adBanner.findFirst({
+  async findOne(id: number, fromApp: boolean) {
+    // 광고 배너 조회
+    const adBanner = await this.prisma.adBanner.findFirst({
       where: { id, deleted_at: null },
     });
+
+    // 광고 배너가 존재하고 fromApp이 true인 경우 view_count 증가
+    if (adBanner && fromApp) {
+      await this.prisma.adBanner.update({
+        where: { id },
+        data: { view_count: { increment: 1 } },
+      });
+    }
+
+    return adBanner; // 조회된 광고 배너 반환
   }
 
   async remove(id: number) {
