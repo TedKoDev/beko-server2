@@ -6,16 +6,40 @@ import { LogType } from '@prisma/client';
 export class LogsService {
   constructor(private prisma: PrismaService) {}
 
-  async createYoutubeLink(link: string, name: string, topic: string) {
+  async createYoutubeLink(data: any) {
+    console.log('data inside service', data);
     const youtubeLink = await this.prisma.youtubelink.create({
       data: {
-        link,
-        name,
-        topic,
+        link: data.link,
+        name: data.name,
+        topic: data.topic,
       },
     });
 
     return youtubeLink;
+  }
+
+  async deleteYoutubeLink(link_id: number) {
+    return this.prisma.youtubelink.delete({
+      where: {
+        link_id,
+      },
+    });
+  }
+
+  async updateYoutubeLink(link_id: number, data: any) {
+    console.log(link_id);
+    console.log(data);
+    return this.prisma.youtubelink.update({
+      where: {
+        link_id,
+      },
+      data: {
+        link: data.link,
+        name: data.name,
+        topic: data.topic,
+      },
+    });
   }
 
   async getLogCount(type: LogType) {

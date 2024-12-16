@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '@/prisma';
+import { AddImageGameQuestionDto } from './dto';
 import { GameResultDto } from './dto/game-result.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
 
@@ -8,12 +9,42 @@ import { SubmitAnswerDto } from './dto/submit-answer.dto';
 export class GamesService {
   constructor(private prisma: PrismaService) {}
 
-  async createGameQuestion(data: any) {
-    const question = await this.prisma.gameQuestion.create({
-      data,
+  async addImageMatchingQuestion(dto: AddImageGameQuestionDto) {
+    return this.prisma.gameQuestion.create({
+      data: dto,
     });
+  }
 
-    return question;
+  async updateImageMatchingQuestion(questionId: number, dto: any) {
+    return this.prisma.gameQuestion.update({
+      where: { question_id: questionId },
+      data: dto,
+    });
+  }
+
+  async deleteImageMatchingQuestion(questionId: number) {
+    return this.prisma.gameQuestion.update({
+      where: { question_id: questionId },
+      data: { deleted_at: new Date() },
+    });
+  }
+
+  async getAllImageMatchingQuestionListwithPagenation(
+    gameTypeId: number,
+    level: number | null, // level을 선택적으로 변경
+    page: number,
+    limit: number,
+  ) {
+    console.log(gameTypeId, level, page, limit);
+    return this.prisma.gameQuestion.findMany({
+      where: {
+        game_type_id: gameTypeId,
+        ...(level !== null && { level }), // level이 null이 아닐 경우에만 추가
+        deleted_at: null,
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
   }
 
   async getImageMatchingQuestions(

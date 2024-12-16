@@ -1,5 +1,15 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { GetLogCountDto } from './dto/logs.dto';
+import { YoutubeCreateDto } from './dto/youtubecreate';
 import { LogsService } from './logs.service';
 
 @Controller({
@@ -10,8 +20,20 @@ export class LogsController {
   constructor(private readonly logsService: LogsService) {}
 
   @Post('youtube/create')
-  async createYoutubeLink(@Body() dto: any) {
-    return this.logsService.createYoutubeLink(dto.link, dto.name, dto.topic);
+  async createYoutubeLink(@Body() dto: YoutubeCreateDto) {
+    return this.logsService.createYoutubeLink(dto as YoutubeCreateDto);
+  }
+
+  @Put('youtube/update/:link_id')
+  async updateYoutubeLink(@Param('link_id') link_id: number, @Body() dto: any) {
+    console.log('link_id inside controller', link_id);
+    console.log('dto inside controller', dto);
+    return this.logsService.updateYoutubeLink(link_id, dto);
+  }
+
+  @Delete('youtube/delete/:link_id')
+  async deleteYoutubeLink(@Param('link_id') link_id: number) {
+    return this.logsService.deleteYoutubeLink(link_id);
   }
 
   @Get('count')

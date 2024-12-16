@@ -1,7 +1,19 @@
-import { Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Auth } from '@/decorators';
+import { AddImageGameQuestionDto } from './dto';
+import { GetImageGameQuestionDto } from './dto/getimagegamequestion.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
 import { GamesService } from './games.service';
 
@@ -32,6 +44,42 @@ export class GamesController {
       level,
       limit,
     );
+  }
+
+  @Get('questions/image-matching')
+  @ApiOperation({ summary: '이미지 매칭 문제 목록 조회 ADMIN용' })
+  @Auth(['ADMIN'])
+  async getAllImageMatchingQuestionList(@Query() dto: GetImageGameQuestionDto) {
+    return this.gamesService.getAllImageMatchingQuestionListwithPagenation(
+      dto.gameTypeId,
+      dto.level,
+      dto.page,
+      dto.limit,
+    );
+  }
+
+  @Put('questions/image-matching/:questionId')
+  @ApiOperation({ summary: '이미지 매칭 문제 수정' })
+  @Auth(['ADMIN'])
+  async updateImageMatchingQuestion(
+    @Param('questionId') questionId: number,
+    @Body() dto: any,
+  ) {
+    return this.gamesService.updateImageMatchingQuestion(questionId, dto);
+  }
+
+  @Delete('questions/image-matching/:questionId')
+  @ApiOperation({ summary: '이미지 매칭 문제 삭제' })
+  @Auth(['ADMIN'])
+  async deleteImageMatchingQuestion(@Param('questionId') questionId: number) {
+    return this.gamesService.deleteImageMatchingQuestion(questionId);
+  }
+
+  @Post('questions/image-matching')
+  @ApiOperation({ summary: '이미지 매칭 문제 추가' })
+  @Auth(['ADMIN'])
+  async addImageMatchingQuestion(@Body() dto: AddImageGameQuestionDto) {
+    return this.gamesService.addImageMatchingQuestion(dto);
   }
 
   @Post('submit')
