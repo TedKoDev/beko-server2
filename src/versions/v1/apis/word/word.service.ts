@@ -216,6 +216,14 @@ export class WordService implements OnModuleInit {
     });
   }
 
+  // 2-1. 유저 단어장 메모 업데이트
+  async updateUserWordNotes(userId: number, wordId: number, notes?: string) {
+    return this.prisma.user_word.update({
+      where: { user_id_word_id: { user_id: userId, word_id: wordId } },
+      data: { notes },
+    });
+  }
+
   // 3. 새로운 단어 추가 및 유저 단어장에 저장
   async createNewWord(
     userId: number,

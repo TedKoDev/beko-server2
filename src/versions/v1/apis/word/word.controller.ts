@@ -6,6 +6,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -51,6 +52,26 @@ export class WordController {
     return this.WordService.addToUserWordList(
       req.user.userId,
       body.word_id,
+      body.notes,
+    );
+  }
+
+  @Patch('user-word/:wordId')
+  @Auth(['ANY'])
+  async updateUserWordNotes(
+    @Req() req: { user: { userId: number } },
+    @Param('wordId') wordId: number,
+    @Body() body: { notes?: string },
+  ) {
+    console.log(
+      'updateUserWordNotes controller',
+      req.user.userId,
+      wordId,
+      body.notes,
+    );
+    return this.WordService.updateUserWordNotes(
+      req.user.userId,
+      wordId,
       body.notes,
     );
   }
