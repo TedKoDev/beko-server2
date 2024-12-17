@@ -39,6 +39,7 @@ export class CommentsController {
     @Query() paginationQuery: PaginationQueryDto,
     @Req() req: { user: { userId: number } },
   ) {
+    console.log('paginationQuery in controller', paginationQuery);
     const userId = req.user.userId;
     return await this.commentsService.findAll(paginationQuery, userId);
   }
@@ -110,6 +111,21 @@ export class CommentsController {
       +postId,
       answerDto.content,
       answerDto.commentId,
+    );
+  }
+
+  @Auth(['ANY'])
+  @Get('user/:userId')
+  async findUserComments(
+    @Param('userId') userId: string,
+    @Query() paginationQuery: PaginationQueryDto,
+    @Req() req: { user: { userId: number } },
+  ) {
+    const currentUserId = req.user.userId;
+    return await this.commentsService.findUserComments(
+      +userId,
+      paginationQuery,
+      currentUserId,
     );
   }
 }

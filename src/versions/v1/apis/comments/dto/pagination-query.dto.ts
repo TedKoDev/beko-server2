@@ -15,4 +15,8 @@ export class PaginationQueryDto {
   @IsInt()
   @IsOptional()
   postId?: number;
+
+  @IsInt()
+  @IsOptional()
+  userId?: number;
 }

@@ -30,6 +30,14 @@ INSERT INTO public."category" (topic_id, category_name, created_at, updated_at, 
 ((SELECT topic_id FROM public."topic" WHERE title = 'Community'), 'Korea Living Information', NOW(), NULL, NULL),
 ((SELECT topic_id FROM public."topic" WHERE title = 'Community'), 'Experience Sharing', NOW(), NULL, NULL);
 
+-- Notice Categories
+INSERT INTO public."category" (topic_id, category_name, created_at, updated_at, deleted_at) VALUES
+((SELECT topic_id FROM public."topic" WHERE title = 'Notice'), 'Ad', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Notice'), 'Topik', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Notice'), 'Job', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Notice'), 'Agency', NOW(), NULL, NULL),
+((SELECT topic_id FROM public."topic" WHERE title = 'Notice'), 'Info', NOW(), NULL, NULL);
+
 <!-- -- category 테이블에 더미 데이터 삽입
 
 -- 1:1 문의 카테고리

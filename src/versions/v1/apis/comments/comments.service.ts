@@ -65,21 +65,30 @@ export class CommentsService {
   }
 
   async findAll(paginationQuery: PaginationQueryDto, currentUserId: number) {
-    const { page = 1, limit = 10, sort = 'latest', postId } = paginationQuery;
+    console.log('paginationQuery in comment', paginationQuery);
+    const {
+      page = 1,
+      limit = 10,
+      sort = 'latest',
+      postId,
+      userId,
+    } = paginationQuery;
     const skip = (page - 1) * limit;
 
     // 포스트 정보 조회 추가
-    const post = await this.prisma.post.findUnique({
-      where: { post_id: postId },
-      select: {
-        post_id: true,
-        user_id: true,
-        type: true,
-      },
-    });
+    if (postId) {
+      const post = await this.prisma.post.findUnique({
+        where: { post_id: postId },
+        select: {
+          post_id: true,
+          user_id: true,
+          type: true,
+        },
+      });
 
-    if (!post) {
-      throw new NotFoundException('Post not found');
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
     }
 
     const orderBy = [];
@@ -91,9 +100,16 @@ export class CommentsService {
       orderBy.push({ likes: 'desc' });
     }
 
+    const whereClause = {
+      deleted_at: null,
+      ...(postId && { post_id: postId }),
+      ...(userId && { user_id: userId }), // userId가 있는 경우에만 조건 추가
+      parent_comment_id: null,
+    };
+
     const [comments, totalCount] = await Promise.all([
       this.prisma.comment.findMany({
-        where: { post_id: postId, deleted_at: null, parent_comment_id: null },
+        where: whereClause,
         include: {
           media: true,
           user: {
@@ -101,6 +117,32 @@ export class CommentsService {
               country: true,
             },
           },
+          post: postId
+            ? undefined
+            : {
+                select: {
+                  post_id: true,
+                  type: true,
+                  post_general: {
+                    select: {
+                      title: true,
+                      content: true,
+                    },
+                  },
+                  post_question: {
+                    select: {
+                      title: true,
+                      content: true,
+                    },
+                  },
+                  post_consultation: {
+                    select: {
+                      title: true,
+                      content: true,
+                    },
+                  },
+                },
+              },
           childComments: {
             where: { deleted_at: null },
             take: 3,
@@ -121,7 +163,7 @@ export class CommentsService {
         orderBy,
       }),
       this.prisma.comment.count({
-        where: { post_id: postId, deleted_at: null, parent_comment_id: null },
+        where: whereClause,
       }),
     ]);
 
@@ -149,8 +191,6 @@ export class CommentsService {
     );
 
     return {
-      post_user_id: post.user_id,
-      post_type: post.type,
       data: commentsWithLikes,
       total: totalCount,
       page,
@@ -447,7 +487,7 @@ export class CommentsService {
         },
       });
 
-      // 선생님에게 ���인트 지급
+      // 선생님에게 인트 지급
       await tx.users.update({
         where: { user_id: teacherId },
         data: { points: { increment: consultation.price } },
@@ -464,5 +504,119 @@ export class CommentsService {
 
       return { message: 'Consultation answered successfully' };
     });
+  }
+
+  async findUserComments(
+    userId: number,
+    paginationQuery: PaginationQueryDto,
+    currentUserId: number,
+  ) {
+    const { page = 1, limit = 10, sort = 'latest' } = paginationQuery;
+    const skip = (page - 1) * limit;
+
+    const orderBy = [];
+    if (sort === 'latest') {
+      orderBy.push({ created_at: 'desc' });
+    } else if (sort === 'oldest') {
+      orderBy.push({ created_at: 'asc' });
+    } else if (sort === 'popular') {
+      orderBy.push({ likes: 'desc' });
+    }
+
+    const [comments, totalCount] = await Promise.all([
+      this.prisma.comment.findMany({
+        where: {
+          user_id: userId,
+          deleted_at: null,
+        },
+        include: {
+          media: true,
+          user: {
+            select: {
+              username: true,
+              profile_picture_url: true,
+              country: true,
+            },
+          },
+          post: {
+            select: {
+              post_id: true,
+              type: true,
+              post_general: {
+                select: {
+                  title: true,
+                  content: true,
+                },
+              },
+              post_question: {
+                select: {
+                  title: true,
+                  content: true,
+                },
+              },
+              post_consultation: {
+                select: {
+                  title: true,
+                  content: true,
+                },
+              },
+            },
+          },
+          childComments: {
+            where: { deleted_at: null },
+            take: 3,
+            orderBy: { created_at: 'desc' },
+            include: {
+              media: true,
+              user: {
+                select: {
+                  username: true,
+                  profile_picture_url: true,
+                },
+              },
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy,
+      }),
+      this.prisma.comment.count({
+        where: {
+          user_id: userId,
+          deleted_at: null,
+        },
+      }),
+    ]);
+
+    const commentsWithLikes = await Promise.all(
+      comments.map(async (comment) => {
+        const userLikedComment = await this.prisma.commentLike.findFirst({
+          where: {
+            user_id: currentUserId,
+            comment_id: comment.comment_id,
+            deleted_at: null,
+          },
+        });
+
+        return {
+          ...comment,
+          user_liked: !!userLikedComment,
+          likes_count: await this.prisma.commentLike.count({
+            where: {
+              comment_id: comment.comment_id,
+              deleted_at: null,
+            },
+          }),
+        };
+      }),
+    );
+
+    return {
+      data: commentsWithLikes,
+      total: totalCount,
+      page,
+      limit,
+    };
   }
 }
