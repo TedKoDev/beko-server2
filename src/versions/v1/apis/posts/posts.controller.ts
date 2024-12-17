@@ -56,7 +56,6 @@ export class PostsController {
   @Get()
   async findAll(
     @Query() paginationQuery: PaginationQueryDto,
-
     @Req()
     req: { headers: { authorization: string }; user: { userId: number } },
   ) {

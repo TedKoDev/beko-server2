@@ -62,4 +62,8 @@ export class PaginationQueryDto {
   @IsEnum(consultationStatus)
   @IsOptional()
   status?: consultationStatus;
+
+  @IsInt()
+  @IsOptional()
+  check_id?: number;
 }

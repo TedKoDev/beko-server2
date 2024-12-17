@@ -598,6 +598,7 @@ export class PostsService {
     const {
       page = 1,
       limit = 10,
+      check_id,
       type,
       sort = 'latest',
       admin_pick = false,
@@ -611,6 +612,7 @@ export class PostsService {
       status: 'PUBLIC',
       deleted_at: null,
       type: { not: postType.CONSULTATION },
+      ...(check_id && { user_id: check_id }),
     };
 
     if (type) {

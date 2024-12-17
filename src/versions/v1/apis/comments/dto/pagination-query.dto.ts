@@ -1,4 +1,5 @@
-import { IsInt, IsOptional } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsInt, IsNumber, IsOptional } from 'class-validator';
 
 export class PaginationQueryDto {
   @IsInt()
@@ -16,7 +17,14 @@ export class PaginationQueryDto {
   @IsOptional()
   postId?: number;
 
-  @IsInt()
   @IsOptional()
-  userId?: number;
+  @Transform(({ value }) => {
+    if (value === null || value === undefined || value === '') {
+      return undefined;
+    }
+    return Number(value);
+  })
+  @IsNumber()
+  @IsOptional()
+  userId?: number | null;
 }
