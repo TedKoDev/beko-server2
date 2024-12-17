@@ -107,10 +107,11 @@ export class GamesService {
       }
 
       const isCorrect = question.answer === answer;
+      console.log('isCorrect_1 ', isCorrect);
       let experienceGained = 0;
       let levelCompleted = false;
       let gameLeveledUp = false;
-      let userLeveledUp = false;
+      const userLeveledUp = false;
 
       // 게임 진행 상태 조회
       const previousProgress = await prisma.userGameProgress.findUnique({
@@ -150,10 +151,12 @@ export class GamesService {
       }
 
       const previousUserLevel = user.level;
-      let currentUserLevel = previousUserLevel;
+      const currentUserLevel = previousUserLevel;
       let currentExperience = user.experience_points;
 
+      console.log('isCorrect_2 ', isCorrect);
       if (isCorrect) {
+        console.log('isCorrect_3', isCorrect);
         // 현재 레벨의 모든 문제를 풀었는지 확인
         const [currentLevelQuestions, currentLevelCorrectAnswers] =
           await Promise.all([
@@ -181,8 +184,12 @@ export class GamesService {
         levelCompleted = currentLevelQuestions === currentLevelCorrectAnswers;
 
         if (levelCompleted) {
-          experienceGained = 10 * previousLevel; // 레벨이 높을수록 더 많은 경험치
+          console.log('levelCompleted_1', levelCompleted);
+          console.log('previousUserLevel', previousUserLevel);
+          experienceGained = 10 * previousUserLevel; // 레벨이 높을수록 더 많은 경험치
           currentExperience += experienceGained;
+          console.log('experienceGained_1', experienceGained);
+          console.log('currentExperience_1', currentExperience);
 
           // 게임 레벨 업데이트
           await prisma.userGameProgress.update({
@@ -213,48 +220,48 @@ export class GamesService {
             },
           });
 
-          // 레벨업 체크는 별도로 수행
-          const levelThreshold = await prisma.levelthreshold.findUnique({
-            where: { level: previousUserLevel },
-          });
+          // // 레벨업 체크는 별도로 수행
+          // const levelThreshold = await prisma.levelthreshold.findUnique({
+          //   where: { level: previousUserLevel },
+          // });
 
-          // 레벨업 조건 체크를 더 엄격하게 수정
-          if (levelThreshold) {
-            // 현재 경험치가 필요 경험치보다 크거나 같은지 확인
-            console.log('Current Experience:', currentExperience);
-            console.log('Required Experience:', levelThreshold.min_experience);
-            console.log('Current Login Count:', user.login_count);
-            console.log('Required Login Count:', levelThreshold.min_logins);
+          // // 레벨업 조건 체크를 더 엄격하게 수정
+          // if (levelThreshold) {
+          //   // 현재 경험치가 필요 경험치보다 크거나 같은지 확인
+          //   console.log('Current Experience:', currentExperience);
+          //   console.log('Required Experience:', levelThreshold.min_experience);
+          //   console.log('Current Login Count:', user.login_count);
+          //   console.log('Required Login Count:', levelThreshold.min_logins);
 
-            // level 1에서는 레벨업이 되지 않도록 수정
-            const canLevelUp =
-              previousUserLevel > 1 && // level 1에서는 레벨업 불가
-              currentExperience >= levelThreshold.min_experience &&
-              levelThreshold.min_logins <= user.login_count;
+          //   // level 1에서는 레벨업이 되지 않도록 수정
+          //   const canLevelUp =
+          //     previousUserLevel > 1 && // level 1에서는 레벨업 불가
+          //     currentExperience >= levelThreshold.min_experience &&
+          //     levelThreshold.min_logins <= user.login_count;
 
-            if (canLevelUp) {
-              currentUserLevel = previousUserLevel + 1;
-              currentExperience -= levelThreshold.min_experience;
-              userLeveledUp = true;
+          //   if (canLevelUp) {
+          //     currentUserLevel = previousUserLevel + 1;
+          //     currentExperience -= levelThreshold.min_experience;
+          //     userLeveledUp = true;
 
-              await prisma.users.update({
-                where: { user_id: userId },
-                data: {
-                  level: currentUserLevel,
-                  experience_points: currentExperience,
-                  points: { increment: 100 }, // 레벨업 보상 포인트
-                },
-              });
-            } else {
-              // 레벨업 조건을 만족하지 못한 경우 경험치만 업데이트
-              await prisma.users.update({
-                where: { user_id: userId },
-                data: {
-                  experience_points: currentExperience,
-                },
-              });
-            }
-          }
+          //     await prisma.users.update({
+          //       where: { user_id: userId },
+          //       data: {
+          //         level: currentUserLevel,
+          //         experience_points: currentExperience,
+          //         points: { increment: 100 }, // 레벨업 보상 포인트
+          //       },
+          //     });
+          //   } else {
+          //     // 레벨업 조건을 만족하지 못한 경우 경험치만 업데이트
+          //     await prisma.users.update({
+          //       where: { user_id: userId },
+          //       data: {
+          //         experience_points: currentExperience,
+          //       },
+          //     });
+          //   }
+          // }
         } else {
           // 일반 정답 처리
           if (!previousProgress) {

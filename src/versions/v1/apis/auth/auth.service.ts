@@ -119,7 +119,7 @@ export class AuthService {
       await this.prisma.point.create({
         data: {
           user_id: user.user_id,
-          points_change: 2000,
+          points_change: 100,
           change_reason: 'New user registration',
         },
       });

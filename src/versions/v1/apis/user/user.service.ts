@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateAgreementsDto } from './dto/update-agreements.dto';
 
+import { LevelThresholdService } from '../level/level.service';
 import { UpdateNotificationSettingsDto } from './dto/update-notification-settings.dto';
 import { UserDTO } from './dto/user.dto';
 
@@ -17,7 +18,10 @@ export const USER_SERVIE_TOKEN = 'USER_SERVIE_TOKEN';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private levelThresholdService: LevelThresholdService,
+  ) {}
 
   // 사용자 프로필 조회
   async profile(userId: number) {
@@ -296,7 +300,12 @@ export class UserService {
 
   // 현재 로그인한 사용자의 정보 조회
   async getCurrentUser(userId: number) {
-    console.log('getCurrentUser', userId);
+    // 레벨업 체크 수행
+    await this.levelThresholdService.checkAndProcessLevelUp(userId);
+
+    console.log('getCurrentUser - 1', userId);
+
+    // 갱신된 사용자 정보 조회
     const user = await this.prisma.users.findUnique({
       where: {
         user_id: userId,
