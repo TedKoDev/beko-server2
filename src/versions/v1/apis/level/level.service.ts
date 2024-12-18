@@ -88,58 +88,71 @@ export class LevelThresholdService {
     };
   }
 
-  // 레벨업 체크 및 처리
-  async checkAndProcessLevelUp(userId: number): Promise<{
+  async checkAndProcessLevelUp(
+    userId: number,
+    prisma?: any, // 트랜잭션용 prisma 인스턴스
+  ): Promise<{
     leveledUp: boolean;
     newLevel?: number;
     experienceRemaining?: number;
   }> {
-    return this.prisma.$transaction(async (prisma) => {
-      const user = await prisma.users.findUnique({
-        where: { user_id: userId },
-        select: {
-          level: true,
-          experience_points: true,
-        },
-      });
+    const prismaTx = prisma || this.prisma; // 전달받은 prisma 인스턴스가 없으면 기본 인스턴스 사용
 
-      if (!user) {
-        return { leveledUp: false };
-      }
-
-      const nextLevelThreshold = await prisma.levelthreshold.findUnique({
-        where: { level: user.level + 1 },
-      });
-
-      if (
-        !nextLevelThreshold ||
-        user.experience_points < nextLevelThreshold.min_experience
-      ) {
-        return { leveledUp: false };
-      }
-
-      const experienceRemaining = user.experience_points;
-
-      // 레벨업 처리
-      const updatedUser = await prisma.users.update({
-        where: { user_id: userId },
-        data: {
-          level: { increment: 1 },
-          experience_points: experienceRemaining,
-        },
-      });
-
-      // 레벨업 보상 포인트 지급 및 로그 기록
-      await this.pointsService.create(userId, {
-        pointsChange: 100,
-        changeReason: `Level up reward (Level ${user.level} → ${updatedUser.level})`,
-      });
-
-      return {
-        leveledUp: true,
-        newLevel: updatedUser.level,
-        experienceRemaining,
-      };
+    const user = await prismaTx.users.findUnique({
+      where: { user_id: userId },
+      select: {
+        level: true,
+        experience_points: true,
+      },
     });
+
+    if (!user) {
+      return { leveledUp: false };
+    }
+
+    console.log('checkAndProcessLevelUp user', user);
+
+    const nextLevelThreshold = await prismaTx.levelthreshold.findUnique({
+      where: { level: user.level + 1 },
+    });
+
+    console.log(
+      'checkAndProcessLevelUp nextLevelThreshold',
+      nextLevelThreshold,
+    );
+
+    if (
+      !nextLevelThreshold ||
+      user.experience_points < nextLevelThreshold.min_experience
+    ) {
+      return { leveledUp: false };
+    }
+
+    const experienceRemaining = user.experience_points;
+
+    console.log(
+      'checkAndProcessLevelUp experienceRemaining',
+      experienceRemaining,
+    );
+
+    await prismaTx.users.update({
+      where: { user_id: userId },
+      data: {
+        level: { increment: 1 },
+        experience_points: experienceRemaining,
+      },
+    });
+
+    // 레벨업 보상 포인트는 별도로 처리
+    await this.pointsService.create(userId, {
+      pointsChange: 10 * user.level,
+      changeReason: `Level up reward (Level ${user.level} → ${user.level + 1})`,
+    });
+
+    return {
+      leveledUp: true,
+      newLevel: user.level + 1,
+      experienceRemaining,
+    };
   }
 }

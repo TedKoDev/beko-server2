@@ -1,17 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '@/prisma';
-import { LevelThresholdService } from '../level';
 import { AddImageGameQuestionDto } from './dto';
 import { GameResultDto } from './dto/game-result.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
 
 @Injectable()
 export class GamesService {
-  constructor(
-    private prisma: PrismaService,
-    private readonly levelThresholdService: LevelThresholdService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async addImageMatchingQuestion(dto: AddImageGameQuestionDto) {
     return this.prisma.gameQuestion.create({
@@ -97,25 +93,25 @@ export class GamesService {
     gameTypeId: number,
     submitAnswerDto: SubmitAnswerDto,
   ): Promise<GameResultDto> {
+    const { questionId, answer, sessionId } = submitAnswerDto;
+
+    // 트랜잭션으로 처리
     return await this.prisma.$transaction(async (prisma) => {
       // 문제 확인
       const question = await prisma.gameQuestion.findUnique({
-        where: { question_id: submitAnswerDto.questionId },
+        where: { question_id: questionId },
       });
 
-      console.log('questionInfo ', question);
       if (!question) {
         throw new NotFoundException('문제를 찾을 수 없습니다.');
       }
 
-      const isCorrect = question.answer === submitAnswerDto.answer;
+      const isCorrect = question.answer === answer;
       console.log('isCorrect_1 ', isCorrect);
       let experienceGained = 0;
       let levelCompleted = false;
       let gameLeveledUp = false;
-      let userLeveledUp = false;
-      let totalExperienceGained = 0;
-      let finalExperience = 0;
+      const userLeveledUp = false;
 
       // 게임 진행 상태 조회
       const previousProgress = await prisma.userGameProgress.findUnique({
@@ -133,10 +129,10 @@ export class GamesService {
       await prisma.imageMatchingAnswer.create({
         data: {
           user_id: userId,
-          question_id: submitAnswerDto.questionId,
-          answer: submitAnswerDto.answer,
+          question_id: questionId,
+          answer: answer,
           is_correct: isCorrect,
-          session_id: submitAnswerDto.sessionId,
+          session_id: sessionId,
         },
       });
 
@@ -155,23 +151,19 @@ export class GamesService {
       }
 
       const previousUserLevel = user.level;
-      let currentUserLevel = previousUserLevel;
-      const currentGameLevel = question.level;
+      const currentUserLevel = previousUserLevel;
       let currentExperience = user.experience_points;
 
       console.log('isCorrect_2 ', isCorrect);
       if (isCorrect) {
         console.log('isCorrect_3', isCorrect);
-        console.log('gameTypeId', gameTypeId);
-        console.log('currentGameLevel', currentGameLevel);
-        console.log('currentUserLevel', currentUserLevel);
         // 현재 레벨의 모든 문제를 풀었는지 확인
         const [currentLevelQuestions, currentLevelCorrectAnswers] =
           await Promise.all([
             prisma.gameQuestion.count({
               where: {
                 game_type_id: gameTypeId,
-                level: currentGameLevel,
+                level: previousLevel,
                 deleted_at: null,
               },
             }),
@@ -179,136 +171,99 @@ export class GamesService {
               where: {
                 user_id: userId,
                 is_correct: true,
-                session_id: submitAnswerDto.sessionId,
+                session_id: sessionId,
                 gameQuestion: {
                   game_type_id: gameTypeId,
-                  level: currentGameLevel,
+                  level: previousLevel,
                 },
               },
             }),
           ]);
-        console.log('currentLevelQuestions', currentLevelQuestions);
-        console.log('currentLevelCorrectAnswers', currentLevelCorrectAnswers);
 
         // 레벨의 모든 문제를 맞췄는지 확인
         levelCompleted = currentLevelQuestions === currentLevelCorrectAnswers;
+
         console.log('levelCompleted_0', levelCompleted);
 
         if (levelCompleted) {
           console.log('levelCompleted_1', levelCompleted);
-          console.log('currentUserLevel', currentUserLevel);
-          experienceGained = 10 * currentUserLevel; // 레벨이 높을수록 더 많은 경험치
-          totalExperienceGained = experienceGained;
-          finalExperience = currentExperience + experienceGained;
+          console.log('previousUserLevel', previousUserLevel);
+          experienceGained = 3 * previousUserLevel; // 레벨이 높을수록 더 많은 경험치
+          currentExperience += experienceGained;
           console.log('experienceGained_1', experienceGained);
           console.log('currentExperience_1', currentExperience);
 
-          // 게임의 최대 레벨 확인
-          const maxGameLevel = await prisma.gameQuestion.groupBy({
-            by: ['level'],
+          // 게임 레벨 업데이트
+          await prisma.userGameProgress.update({
             where: {
-              game_type_id: gameTypeId,
-              deleted_at: null,
+              user_id_game_type_id: {
+                user_id: userId,
+                game_type_id: gameTypeId,
+              },
             },
-            orderBy: {
-              level: 'desc',
+            data: {
+              current_level: { increment: 1 },
+              max_level: {
+                increment: previousProgress?.max_level <= previousLevel ? 1 : 0,
+              },
+              total_correct: { increment: 1 },
+              total_attempts: { increment: 1 },
+              last_played_at: new Date(),
             },
-            take: 1,
           });
 
-          const maxAvailableLevel = maxGameLevel[0]?.level || 1;
-          const nextLevel = (previousProgress?.current_level || 1) + 1;
+          gameLeveledUp = true;
 
-          // 다음 레벨이 최대 레벨을 초과하지 않을 때만 레벨업
-          if (nextLevel <= maxAvailableLevel) {
-            experienceGained = 10 * previousLevel;
-            totalExperienceGained = experienceGained;
-            finalExperience = currentExperience + experienceGained;
-
-            console.log('experienceGained_2', experienceGained);
-            console.log('currentExperience_2', currentExperience);
-            // 게임 레벨 업데이트
-            await prisma.userGameProgress.update({
-              where: {
-                user_id_game_type_id: {
-                  user_id: userId,
-                  game_type_id: gameTypeId,
-                },
-              },
-              data: {
-                current_level: nextLevel,
-                max_level: Math.max(
-                  nextLevel,
-                  previousProgress?.max_level || 1,
-                ),
-                total_correct: { increment: 1 },
-                total_attempts: { increment: 1 },
-                last_played_at: new Date(),
-              },
-            });
-
-            gameLeveledUp = true;
-          } else {
-            // 최대 레벨에 도달한 경우
-            experienceGained = 5 * previousLevel; // 보너스 경험치 감소
-            totalExperienceGained = experienceGained;
-            finalExperience = currentExperience + experienceGained;
-            console.log('experienceGained_3', experienceGained);
-            console.log('currentExperience_2', currentExperience);
-
-            // 총 시도 횟수만 증가
-            await prisma.userGameProgress.update({
-              where: {
-                user_id_game_type_id: {
-                  user_id: userId,
-                  game_type_id: gameTypeId,
-                },
-              },
-              data: {
-                total_correct: { increment: 1 },
-                total_attempts: { increment: 1 },
-                last_played_at: new Date(),
-              },
-            });
-
-            levelCompleted = false; // 최대 레벨이므로 레벨 완료 표시 안함
-          }
-
-          console.log('experienceGained_4', experienceGained);
-          console.log('currentExperience_4', currentExperience);
-
-          console.log('currentExperience 경험치 업데이트 ', currentExperience);
-          // 경험치 업데이트
-          const updatedUser = await prisma.users.update({
+          // 경험치만 업데이트
+          await prisma.users.update({
             where: { user_id: userId },
             data: {
-              experience_points: finalExperience,
+              experience_points: currentExperience,
             },
           });
-          console.log('updatedUser', updatedUser);
 
-          // 레벨업 체크 및 처리
-          const levelUpResult =
-            await this.levelThresholdService.checkAndProcessLevelUp(
-              userId,
-              prisma,
-            );
+          // // 레벨업 체크는 별도로 수행
+          // const levelThreshold = await prisma.levelthreshold.findUnique({
+          //   where: { level: previousUserLevel },
+          // });
 
-          console.log('levelUpResult', levelUpResult);
-          if (levelUpResult.leveledUp) {
-            userLeveledUp = true;
-            currentUserLevel = levelUpResult.newLevel;
-            currentExperience = levelUpResult.experienceRemaining;
-          }
+          // // 레벨업 조건 체크를 더 엄격하게 수정
+          // if (levelThreshold) {
+          //   // 현재 경험치가 필요 경험치보다 크거나 같은지 확인
+          //   console.log('Current Experience:', currentExperience);
+          //   console.log('Required Experience:', levelThreshold.min_experience);
+          //   console.log('Current Login Count:', user.login_count);
+          //   console.log('Required Login Count:', levelThreshold.min_logins);
 
-          console.log('Final values:', {
-            experienceGained: totalExperienceGained,
-            currentExperience,
-            finalExperience,
-            previousUserLevel,
-            currentUserLevel,
-            userLeveledUp,
-          });
+          //   // level 1에서는 레벨업이 되지 않도록 수정
+          //   const canLevelUp =
+          //     previousUserLevel > 1 && // level 1에서는 레벨업 불가
+          //     currentExperience >= levelThreshold.min_experience &&
+          //     levelThreshold.min_logins <= user.login_count;
+
+          //   if (canLevelUp) {
+          //     currentUserLevel = previousUserLevel + 1;
+          //     currentExperience -= levelThreshold.min_experience;
+          //     userLeveledUp = true;
+
+          //     await prisma.users.update({
+          //       where: { user_id: userId },
+          //       data: {
+          //         level: currentUserLevel,
+          //         experience_points: currentExperience,
+          //         points: { increment: 100 }, // 레벨업 보상 포인트
+          //       },
+          //     });
+          //   } else {
+          //     // 레벨업 조건을 만족하지 못한 경우 경험치만 업데이트
+          //     await prisma.users.update({
+          //       where: { user_id: userId },
+          //       data: {
+          //         experience_points: currentExperience,
+          //       },
+          //     });
+          //   }
+          // }
         } else {
           // 일반 정답 처리
           if (!previousProgress) {
@@ -401,7 +356,7 @@ export class GamesService {
           isLevelCompleted: levelCompleted,
         },
         userProgress: {
-          experienceGained: totalExperienceGained,
+          experienceGained,
           currentExperience,
           previousUserLevel,
           currentUserLevel,

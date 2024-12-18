@@ -333,7 +333,7 @@ export class UserService {
       console.log('user not found');
       throw new NotFoundException('User not found');
     }
-    console.log('user', user);
+    // console.log('user', user);
 
     return {
       user_id: user.user_id,
