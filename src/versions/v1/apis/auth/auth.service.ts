@@ -61,7 +61,7 @@ export class AuthService {
         );
       }
 
-      // const emailVerificationToken = uuidv4();
+      const emailVerificationToken = uuidv4();
       const encryptedPassword = await bcrypt.hash(password, 10);
 
       let finalUsername = name;
@@ -83,13 +83,13 @@ export class AuthService {
           email,
           encrypted_password: encryptedPassword,
           username: finalUsername,
-          // email_verification_token: emailVerificationToken,
-          email_verification_token: null,
-          // is_email_verified: false,
-          is_email_verified: true,
+          email_verification_token: emailVerificationToken,
+          // email_verification_token: null,
+          is_email_verified: false,
+          // is_email_verified: true,
           role: ROLE.USER,
-          // account_status: accountStatus.INACTIVE,
-          account_status: accountStatus.ACTIVE,
+          account_status: accountStatus.INACTIVE,
+          // account_status: accountStatus.ACTIVE,
           country_id: country_id,
           terms_agreed: term_agreement,
           privacy_agreed: privacy_agreement,
@@ -99,7 +99,7 @@ export class AuthService {
       });
 
       // 이메일 인증 부분 주석 처리
-      /*
+
       try {
         await this.emailService.sendUserConfirmation(
           email,
@@ -113,7 +113,6 @@ export class AuthService {
           HttpStatus.SERVICE_UNAVAILABLE,
         );
       }
-      */
 
       // 이메일 인증 없이 바로 처리된 것으로 간주
       await this.prisma.point.create({
@@ -124,12 +123,18 @@ export class AuthService {
         },
       });
 
+      // 포인트 user 테이블에 추가
+      await this.prisma.users.update({
+        where: { user_id: user.user_id },
+        data: { points: { increment: 100 } },
+      });
+
       // 해당하는 country count +1 추가하기
       // 국가 카운트 증가
       await this.countryService.updateUserCount(country_id, true); // country_id를 문자열로 변환하여 사용
 
       return {
-        message: '회원가입이 완료되었습니다.',
+        message: 'Please check your email to verify your account.',
         username: finalUsername,
       };
     } catch (error) {
@@ -173,6 +178,11 @@ export class AuthService {
         '비밀번호가 일치하지 않습니다',
         HttpStatus.UNAUTHORIZED,
       );
+    }
+
+    // 이메일 인증 확인
+    if (user.is_email_verified === false) {
+      throw new HttpException('이메일 인증이 필요합니다', HttpStatus.FORBIDDEN);
     }
 
     // 로그인 성공 시 추가 로직 (예: JWT 토큰 발급 등)
