@@ -37,7 +37,7 @@ export class AuthController {
   async confirmEmail(@Query() dto: ConfirmEmailDto, @Res() res: Response) {
     const { token } = dto;
     await this.authService.confirmEmail(token);
-    return res.send('이메일 인증이 완료되었습니다. 로그인해주세요.');
+    return res.send('Email verification completed. Please login.');
   }
 
   /** POST */

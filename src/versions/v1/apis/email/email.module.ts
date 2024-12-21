@@ -19,7 +19,7 @@ import { EmailService } from './email.service';
           },
         },
         defaults: {
-          from: `"No Reply" <${config.get<string>('mail.from')}>`,
+          from: `"BeraKorean" <${config.get<string>('mail.from')}>`,
         },
         template: {
           dir: join(__dirname, '../../../../views/'), // 템플릿 파일이 있는 디렉토리 설정
