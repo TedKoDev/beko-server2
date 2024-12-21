@@ -399,7 +399,7 @@ export class UserService {
           deleted_at: new Date(),
           // 개인정보 마스킹 처리
           email: `deleted_${userId}@deleted.com`,
-          username: `Anonymous`,
+          username: `Anonymous_${userId}`,
           bio: null,
           profile_picture_url: null,
           phone_number: null,

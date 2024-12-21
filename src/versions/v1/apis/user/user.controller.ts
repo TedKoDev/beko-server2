@@ -162,6 +162,7 @@ export class UserController {
   @Get('notification-settings')
   @Auth(['ANY'])
   async getNotificationSettings(@Req() req: { user: { userId: number } }) {
+    console.log('getNotificationSettings', req.user.userId);
     return this.userService.getNotificationSettings(req.user.userId);
   }
 
