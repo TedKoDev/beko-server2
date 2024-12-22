@@ -5,6 +5,9 @@ node_modules
 /dist
 /node_modules
 /build
+db/
+
+.env
 
 # Logs
 logs

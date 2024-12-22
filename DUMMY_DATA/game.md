@@ -9,14 +9,14 @@ VALUES
 1,
 'https://beko-s3.s3.amazonaws.com/imagematchinggame/%EA%B0%80%EB%B0%A9.webp',
 '가방',
-ARRAY['가방', '책', '의자', '물'],
+ARRAY['책','가방', '의자', '물'],
 1
 ),
 (
 1,
 'https://beko-s3.s3.amazonaws.com/imagematchinggame/%ED%95%99%EA%B5%90.webp',
 '학교',
-ARRAY['학교', '가방', '의자', '책'],
+ARRAY['가방', '의자', '학교', '책'],
 1
 ),
 (
