@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -15,6 +16,9 @@ import { NotificationModule } from './versions/v1/apis/notification/notification
     JwtModule.register({ global: true, secret: config.get('jwt.secret') }),
     ScheduleModule.forRoot(),
     NotificationModule,
+    ConfigModule.forRoot({
+      isGlobal: true, // 전역으로 설정
+    }),
   ],
   controllers: [AppController],
   providers: [

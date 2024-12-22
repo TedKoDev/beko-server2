@@ -21,13 +21,14 @@
     }
   },
   "mail": {
-    "host": "smtp.gmail.com",
-    "port": 465,
-    "user": "gcc.offical.mail@gmail.com",
-    "pass": "bbnb xewz esay ybha",
-    "from": "yongp8888@gmail.com",
-    "receiverEmail": "gcc@gccgroup.co.kr"
+    "host": "${SMTP_USER_HOST}",
+    "port": "${SMTP_USER_PORT}",
+    "user": "${SMTP_USER_ID}",
+    "pass": "${SMTP_USER_PASSWORD}",
+    "from": "${SMTP_FROM}",
+    "receiverEmail": "${SMTP_RECEIVER}"
   },
+
   "cafe24": {
     "clientId": "63TxKJEKaceELEdPdQju",
     "secret": "jBOHeke2iS"

@@ -1,31 +1,34 @@
 import { MailerModule } from '@nestjs-modules/mailer';
-import { EjsAdapter } from '@nestjs-modules/mailer/dist/adapters/ejs.adapter'; // EJS 어댑터 추가
+import { EjsAdapter } from '@nestjs-modules/mailer/dist/adapters/ejs.adapter';
 import { Module } from '@nestjs/common';
-import * as config from 'config';
-import { join } from 'path'; // 경로 설정을 위해 join을 사용
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { join } from 'path';
 import { EmailService } from './email.service';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     MailerModule.forRootAsync({
-      useFactory: async () => ({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
         transport: {
-          host: config.get<string>('mail.host'),
-          port: config.get<number>('mail.port'),
+          host: configService.get('SMTP_USER_HOST'),
+          port: configService.get('SMTP_USER_PORT'),
           secure: true,
           auth: {
-            user: config.get<string>('mail.user'),
-            pass: config.get<string>('mail.pass'),
+            user: configService.get('SMTP_USER_ID'),
+            pass: configService.get('SMTP_USER_PASSWORD'),
           },
         },
         defaults: {
-          from: `"BeraKorean" <${config.get<string>('mail.from')}>`,
+          from: `"BeraKorean" <${configService.get('SMTP_FROM')}>`,
         },
         template: {
-          dir: join(__dirname, '../../../../views/'), // 템플릿 파일이 있는 디렉토리 설정
-          adapter: new EjsAdapter(), // EJS 어댑터 설정
+          dir: join(__dirname, '../../../../views/'),
+          adapter: new EjsAdapter(),
           options: {
-            strict: false, // EJS 옵션 설정
+            strict: false,
           },
         },
       }),
