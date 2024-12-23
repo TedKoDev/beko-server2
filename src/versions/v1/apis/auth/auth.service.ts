@@ -189,7 +189,7 @@ export class AuthService {
 
     // Generate tokens
     const tokens = await this.generateTokens(user);
-    console.log('logintokens', tokens);
+    // console.log('logintokens', tokens);
 
     // Store refresh token hash in database
     await this.updateRefreshToken(user.user_id, tokens.refresh_token);
@@ -207,8 +207,8 @@ export class AuthService {
     const payload = { userId: user.user_id, role: user.role };
 
     const [access_token, refresh_token] = await Promise.all([
-      this.jwtService.signAsync(payload, { expiresIn: '1m' }), // 액세스 토큰 15분
-      this.jwtService.signAsync(payload, { expiresIn: '7d' }), // 리프레시 토큰 7일
+      this.jwtService.signAsync(payload, { expiresIn: '60m' }), // 액세스 토큰 60분
+      this.jwtService.signAsync(payload, { expiresIn: '14d' }), // 리프레시 토큰 14일
     ]);
 
     return {

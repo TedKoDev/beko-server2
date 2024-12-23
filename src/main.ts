@@ -75,6 +75,9 @@ async function bootstrap() {
     `🚀 Server is running on ${port}, mode: [${config.get<string>('env')}], debug: [${config.get<boolean>('debug')}]`,
   );
 
-  await app.listen(port);
+  // await app.listen(port);
+
+  // 모든 네트워크 인터페이스에서 수신하도록 '0.0.0.0' 추가
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();
