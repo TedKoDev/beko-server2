@@ -13,6 +13,21 @@ enum LogType {
   TODAY_TASK_PARTICIPATION
 }
 
+
+model AppVersion {
+  id          Int      @id @default(autoincrement())
+  platform    String   // 'ios' | 'android'
+  version     String   // 예: "1.0.0"
+  build       Int      // 빌드 번호
+  required    Boolean  @default(false) // 강제 업데이트 여부
+  message     String?  // 업데이트 메시지
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  deleted_at  DateTime?
+
+  @@index([platform])
+}
+
 model log {
   log_id        Int       @id @default(autoincrement())
   type          LogType   // 로그 종류

@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { AdBannerModule } from './apis/ad-banner';
 import { AdminBlockModule } from './apis/admin-block';
 import { AdminDashboardModule } from './apis/admin-dashboard/admin-dashboard.module';
+import { AppVersionModule } from './apis/app-version/app-version.module';
 import { AuthModule } from './apis/auth';
 import { CommentsModule } from './apis/comments';
 import { CountryModule } from './apis/country/country.module';
@@ -50,6 +51,7 @@ import { WordModule } from './apis/word';
     GamesModule,
     LevelThresholdModule,
     NotificationModule,
+    AppVersionModule,
   ],
 })
 export class V1Module {}

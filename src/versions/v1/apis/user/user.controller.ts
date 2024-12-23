@@ -132,6 +132,14 @@ export class UserController {
     console.log('User ID:', req.user.userId);
     console.log('Password:', dto.password); // 비밀번호 로그
 
+    // 비밀번호가 없는경우  소셜로그인인지 확인하기
+    if (dto.password === null) {
+      console.log('소셜로그인');
+      // 소셜로그인이면 그냥 진행
+      return this.userService.deactivateUser(req.user.userId);
+    }
+
+    // 비밀번호 검증
     const isPasswordValid = await this.authService.validateUserPassword(
       req.user.userId,
       dto.password,
