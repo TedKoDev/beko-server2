@@ -8,6 +8,7 @@ import { NestFactory } from '@nestjs/core';
 import * as config from 'config';
 
 import { NestExpressApplication } from '@nestjs/platform-express';
+import * as cookieParser from 'cookie-parser';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './filters';
@@ -65,6 +66,8 @@ async function bootstrap() {
   app.enableVersioning({ type: VersioningType.URI });
 
   app.useGlobalFilters(HttpExceptionFilter(config.get<boolean>('debug')));
+
+  app.use(cookieParser());
 
   const port = config.get<number>('port') ?? 5050;
 

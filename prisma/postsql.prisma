@@ -106,6 +106,7 @@ model users {
   
 
   @@unique([email, encrypted_password])
+  hashed_refresh_token String? @db.VarChar(255)
 }
 
 

@@ -5,7 +5,6 @@ import {
   HttpStatus,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { accountStatus, social_provider } from '@prisma/client';
@@ -161,7 +160,7 @@ export class AuthService {
     const user = await this.prisma.users.findFirst({
       where: {
         email,
-        encrypted_password: { not: null },
+        encrypted_password: { not: null }, // 일반 회원가입 사용자만 조회
       },
     });
 
@@ -172,6 +171,7 @@ export class AuthService {
       );
     }
 
+    // bcrypt로 암호화된 비밀번호와 비교
     const isMatch = await bcrypt.compare(password, user.encrypted_password);
     if (!isMatch) {
       throw new HttpException(
@@ -180,81 +180,22 @@ export class AuthService {
       );
     }
 
+    // 이메일 인증 확인
     if (user.is_email_verified === false) {
-      throw new HttpException(
-        'Please verify your email to continue',
-        HttpStatus.FORBIDDEN,
-      );
+      throw new HttpException('이메일 인증이 필요합니다', HttpStatus.FORBIDDEN);
     }
 
-    // Generate tokens
-    const tokens = await this.generateTokens(user);
-    console.log('logintokens', tokens);
-
-    // Store refresh token hash in database
-    await this.updateRefreshToken(user.user_id, tokens.refresh_token);
+    // 로그인 성공 시 추가 로직 (예: JWT 토큰 발급 등)
+    const payload = { userId: user.user_id, role: user.role };
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '1w' });
 
     return {
-      ...tokens,
+      access_token: accessToken,
       user: {
         user_id: user.user_id,
         username: user.username,
       },
     };
-  }
-
-  async generateTokens(user: any) {
-    const payload = { userId: user.user_id, role: user.role };
-
-    const [access_token, refresh_token] = await Promise.all([
-      this.jwtService.signAsync(payload, { expiresIn: '1m' }), // 액세스 토큰 15분
-      this.jwtService.signAsync(payload, { expiresIn: '7d' }), // 리프레시 토큰 7일
-    ]);
-
-    return {
-      access_token,
-      refresh_token,
-    };
-  }
-
-  async updateRefreshToken(userId: number, refresh_token: string) {
-    // Store hashed refresh token
-    const hash = await bcrypt.hash(refresh_token, 10);
-    await this.prisma.users.update({
-      where: { user_id: userId },
-      data: { hashed_refresh_token: hash },
-    });
-  }
-
-  async refreshTokens(refresh_token: string) {
-    try {
-      // Verify refresh token
-      const payload = await this.jwtService.verifyAsync(refresh_token);
-      const user = await this.prisma.users.findUnique({
-        where: { user_id: payload.userId },
-      });
-
-      if (!user || !user.hashed_refresh_token) {
-        throw new UnauthorizedException('Invalid refresh token');
-      }
-
-      // Verify stored hash
-      const isValid = await bcrypt.compare(
-        refresh_token,
-        user.hashed_refresh_token,
-      );
-      if (!isValid) {
-        throw new UnauthorizedException('Invalid refresh token');
-      }
-
-      // Generate new tokens
-      const tokens = await this.generateTokens(user);
-      await this.updateRefreshToken(user.user_id, tokens.refresh_token);
-
-      return tokens;
-    } catch {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
   }
 
   // 경험치 기반 레벨 업데이트 함수

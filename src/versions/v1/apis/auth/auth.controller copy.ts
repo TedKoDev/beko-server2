@@ -5,14 +5,12 @@ import {
   Inject,
   Post,
   Query,
-  Req,
   Res,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { social_provider } from '@prisma/client';
 
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { SlackService } from '../utils/slack/slack.service';
 import { AUTH_SERVICE_TOKEN, AuthService } from './auth.service';
 import {
@@ -73,41 +71,10 @@ export class AuthController {
     return result;
   }
 
-  // @Post('login')
-  // async Login(@Body() dto: DevLoginDto) {
-  //   const { email, password } = dto;
-  //   return this.authService.loginUser(email, password);
-  // }
   @Post('login')
-  async Login(
-    @Body() dto: DevLoginDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async Login(@Body() dto: DevLoginDto) {
     const { email, password } = dto;
-    const tokens = await this.authService.loginUser(email, password);
-
-    // Set refresh token in HTTP-only cookie
-    res.cookie('refresh_token', tokens.refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
-    // Return access token in response body
-    return {
-      access_token: tokens.access_token,
-      user: tokens.user,
-    };
-  }
-
-  @Post('refresh')
-  async refresh(@Req() req: Request) {
-    const refresh_token = req.cookies['refresh_token'];
-    if (!refresh_token) {
-      throw new UnauthorizedException('Refresh token not found');
-    }
-    return this.authService.refreshTokens(refresh_token);
+    return this.authService.loginUser(email, password);
   }
 
   @Post('user-info-body')
@@ -136,7 +103,6 @@ export class AuthController {
       email: string;
       name?: string;
     },
-    @Res({ passthrough: true }) res: Response,
   ) {
     const { provider, providerUserId, email, name } = dto;
     const user = await this.authService.validateSocialUser(
@@ -146,26 +112,12 @@ export class AuthController {
       name,
     );
 
-    // 일반 로그인과 동일한 토큰 생성 로직 사용
-    const tokens = await this.authService.generateTokens(user);
+    // JWT 토큰 생성
+    const payload = { userId: user.user_id, role: user.role };
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '1w' });
 
-    // Store refresh token hash in database
-    await this.authService.updateRefreshToken(
-      user.user_id,
-      tokens.refresh_token,
-    );
-
-    // Set refresh token in HTTP-only cookie
-    res.cookie('refresh_token', tokens.refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
-    // Return access token and user info
     return {
-      access_token: tokens.access_token,
+      access_token: accessToken,
       user: {
         user_id: user.user_id,
         username: user.username,
