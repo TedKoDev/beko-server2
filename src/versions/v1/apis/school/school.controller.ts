@@ -8,8 +8,12 @@ import {
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CommentsService } from '../comments/comments.service';
+import { CreateCommentDto } from '../comments/dto/create-comment.dto';
+import { PaginationQueryDto } from '../comments/dto/pagination-query.dto';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { PaginationDto } from './dto/pagination.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
@@ -21,7 +25,10 @@ import { SchoolService } from './school.service';
   version: '1',
 })
 export class SchoolController {
-  constructor(private readonly schoolService: SchoolService) {}
+  constructor(
+    private readonly schoolService: SchoolService,
+    private readonly commentsService: CommentsService,
+  ) {}
 
   @Auth(['ADMIN'])
   @Post()
@@ -32,22 +39,9 @@ export class SchoolController {
 
   @Auth(['ANY'])
   @Get()
-  @ApiOperation({ summary: 'Get all schools' })
+  @ApiOperation({ summary: 'Get all schools with optional filters' })
   findAll(@Query() pagination: PaginationDto) {
-    console.log('Request received for schools');
-    console.log('Pagination:', pagination);
-    console.log('Query params:', pagination.page, pagination.limit);
     return this.schoolService.findAll(pagination);
-  }
-
-  @Auth(['ANY'])
-  @Get('region/:region')
-  @ApiOperation({ summary: 'Get schools by region' })
-  findByRegion(
-    @Param('region') region: string,
-    @Query() pagination: PaginationDto,
-  ) {
-    return this.schoolService.findByRegion(region, pagination);
   }
 
   @Auth(['ANY'])
@@ -69,5 +63,35 @@ export class SchoolController {
   @ApiOperation({ summary: 'Delete a school' })
   remove(@Param('id') id: string) {
     return this.schoolService.remove(+id);
+  }
+
+  @Auth(['ANY'])
+  @Get(':id/comments')
+  @ApiOperation({ summary: 'Get comments for a school' })
+  async getComments(
+    @Param('id') id: string,
+    @Query() paginationQuery: PaginationQueryDto,
+    @Req() req: { user: { userId: number } },
+  ) {
+    const userId = req.user.userId;
+    return this.commentsService.findAll(
+      { ...paginationQuery, schoolId: +id },
+      userId,
+    );
+  }
+
+  @Auth(['ANY'])
+  @Post(':id/comments')
+  @ApiOperation({ summary: 'Add a comment to a school' })
+  async addComment(
+    @Param('id') id: string,
+    @Body() createCommentDto: CreateCommentDto,
+    @Req() req: { user: { userId: number } },
+  ) {
+    const userId = req.user.userId;
+    return this.commentsService.create(userId, {
+      ...createCommentDto,
+      schoolId: +id,
+    });
   }
 }

@@ -1,10 +1,11 @@
+import { PrismaService } from '@/prisma';
 import { Module } from '@nestjs/common';
+import { CommentsModule } from '../comments/comments.module';
 import { SchoolController } from './school.controller';
 import { SchoolService } from './school.service';
 
-import { PrismaService } from '@/prisma';
-
 @Module({
+  imports: [CommentsModule],
   providers: [SchoolService, PrismaService],
   controllers: [SchoolController],
   exports: [SchoolService],

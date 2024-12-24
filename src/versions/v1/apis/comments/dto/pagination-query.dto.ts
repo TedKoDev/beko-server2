@@ -17,6 +17,10 @@ export class PaginationQueryDto {
   @IsOptional()
   postId?: number;
 
+  @IsInt()
+  @IsOptional()
+  schoolId?: number;
+
   @IsOptional()
   @Transform(({ value }) => {
     if (value === null || value === undefined || value === '') {

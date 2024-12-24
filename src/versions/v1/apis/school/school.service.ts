@@ -15,58 +15,22 @@ export class SchoolService {
   }
 
   async findAll(pagination: PaginationDto) {
-    const { page = 1, limit = 10 } = pagination;
+    const { page = 1, limit = 10, country_code, region } = pagination;
     const skip = (page - 1) * limit;
 
-    const [total, items] = await Promise.all([
-      // Get total count
-      this.prisma.koreanSchool.count({
-        where: {
-          deleted_at: null,
-        },
-      }),
-      // Get paginated items
-      this.prisma.koreanSchool.findMany({
-        where: {
-          deleted_at: null,
-        },
-        skip,
-        take: limit,
-        orderBy: {
-          created_at: 'desc',
-        },
-      }),
-    ]);
-
-    return {
-      items,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+    // Build where clause based on filters
+    const where = {
+      deleted_at: null,
+      ...(country_code && { country_code }),
+      ...(region && { region }),
     };
-  }
-
-  async findByRegion(region: string, pagination: PaginationDto) {
-    const { page = 1, limit = 10 } = pagination;
-    const skip = (page - 1) * limit;
 
     const [total, items] = await Promise.all([
       // Get total count
-      this.prisma.koreanSchool.count({
-        where: {
-          region,
-          deleted_at: null,
-        },
-      }),
+      this.prisma.koreanSchool.count({ where }),
       // Get paginated items
       this.prisma.koreanSchool.findMany({
-        where: {
-          region,
-          deleted_at: null,
-        },
+        where,
         skip,
         take: limit,
         orderBy: {

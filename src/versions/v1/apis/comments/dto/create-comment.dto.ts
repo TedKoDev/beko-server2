@@ -1,23 +1,37 @@
 // src/comments/dto/create-comment.dto.ts
-import { IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import {
+  IsNumber,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { CreateMediaDto } from '../../media/dto/create-media.dto';
 
 export class CreateCommentDto {
-  @IsInt()
-  postId: number;
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  postId?: number;
 
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  schoolId?: number;
+
+  @ApiProperty()
   @IsString()
-  @IsNotEmpty()
   content: string;
 
-  @IsInt()
+  @ApiProperty({ required: false })
   @IsOptional()
+  @IsNumber()
   parentCommentId?: number;
 
+  @ApiProperty({ required: false, type: [CreateMediaDto] })
   @IsOptional()
-  @IsInt()
-  likes?: number;
-
-  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CreateMediaDto)
   media?: CreateMediaDto[];
 }

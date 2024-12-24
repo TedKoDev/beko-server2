@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Length, Min } from 'class-validator';
 
 export class PaginationDto {
   @ApiProperty({
@@ -24,4 +24,32 @@ export class PaginationDto {
   @IsInt()
   @Min(1)
   limit?: number = 10;
+
+  @ApiProperty({
+    description: 'Country code filter (ISO 3166-1 alpha-2)',
+    required: false,
+    example: 'KR',
+  })
+  @IsOptional()
+  @IsString()
+  @Length(2, 2)
+  country_code?: string;
+
+  @ApiProperty({
+    description: 'Description filter',
+    required: false,
+    example: 'This School is good',
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({
+    description: 'Region filter',
+    required: false,
+    example: 'Seoul',
+  })
+  @IsOptional()
+  @IsString()
+  region?: string;
 }

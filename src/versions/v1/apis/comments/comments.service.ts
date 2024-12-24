@@ -71,6 +71,7 @@ export class CommentsService {
       limit = 10,
       sort = 'latest',
       postId,
+      schoolId,
       userId,
     } = paginationQuery;
     const skip = (page - 1) * limit;
@@ -103,7 +104,8 @@ export class CommentsService {
     const whereClause = {
       deleted_at: null,
       ...(postId && { post_id: postId }),
-      ...(userId && { user_id: userId }), // userId가 있는 경우에만 조건 추가
+      ...(schoolId && { school_id: schoolId }),
+      ...(userId && { user_id: userId }),
       parent_comment_id: null,
     };
 

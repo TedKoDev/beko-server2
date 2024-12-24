@@ -32,6 +32,13 @@ export class CreateSchoolDto {
   name_en: string;
 
   @ApiProperty({
+    example: 'This School is good',
+    description: 'School description',
+  })
+  @IsString()
+  description?: string;
+
+  @ApiProperty({
     example: 'https://lei.snu.ac.kr',
     description: 'School website URL',
     required: false,

@@ -10,6 +10,7 @@ import { CommentsService } from './comments.service';
 @Module({
   imports: [MediaModule, PointsModule, NotificationModule],
   controllers: [CommentsController],
+  exports: [CommentsService],
   providers: [CommentsService, PrismaService],
 })
 export class CommentsModule {}

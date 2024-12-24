@@ -293,7 +293,8 @@ model media {
 
 model comment {
   comment_id       Int       @id @default(autoincrement())
-  post_id          Int
+  post_id          Int?
+  school_id        Int?
   user_id          Int
   content          String    @db.Text
   parent_comment_id Int?
@@ -303,7 +304,8 @@ model comment {
   updated_at       DateTime?  @db.Timestamp
   deleted_at       DateTime?  @db.Timestamp
   isSelected       Boolean?   @default(false) // 답변으로 선택 여부
-  post             post       @relation(fields: [post_id], references: [post_id])
+  post             post?       @relation(fields: [post_id], references: [post_id])
+  school           koreanSchool? @relation(fields: [school_id], references: [school_id])
   user             users      @relation(fields: [user_id], references: [user_id])
   parentComment    comment?   @relation("CommentToComment", fields: [parent_comment_id], references: [comment_id])
   childComments    comment[]  @relation("CommentToComment")
@@ -644,12 +646,15 @@ model koreanSchool {
   name_ko          String    @db.VarChar(100)    // 한글 이름
   name_en          String    @db.VarChar(100)    // 영문 이름
   website_url      String?   @db.VarChar(255)    // 학교 웹사이트 링크
+  description      String?   @db.Text
   created_at       DateTime  @default(now()) @db.Timestamp
   updated_at       DateTime? @db.Timestamp
   deleted_at       DateTime? @db.Timestamp
   
   @@index([country_code])
   @@index([region])
+
+  comments         comment[]
 }
 
 
