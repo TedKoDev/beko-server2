@@ -220,6 +220,7 @@ export class GamesService {
           const nextLevel = (previousProgress?.current_level || 1) + 1;
 
           // 다음 레벨이 최대 레벨을 초과하지 않을 때만 레벨업
+          // 다음 레벨이 최대 레벨을 초과하지 않을 때만 레벨업
           if (nextLevel <= maxAvailableLevel) {
             experienceGained = 10 * previousLevel;
             totalExperienceGained = experienceGained;
@@ -227,6 +228,7 @@ export class GamesService {
 
             console.log('experienceGained_2', experienceGained);
             console.log('currentExperience_2', currentExperience);
+
             // 게임 레벨 업데이트
             await prisma.userGameProgress.update({
               where: {
@@ -236,27 +238,28 @@ export class GamesService {
                 },
               },
               data: {
-                current_level: nextLevel,
-                max_level: Math.max(
-                  nextLevel,
-                  previousProgress?.max_level || 1,
-                ),
+                // 현재 진행중인 레벨의 게임을 클리어했을 때만 다음 레벨로 업데이트
+                ...(currentGameLevel === previousProgress?.current_level && {
+                  current_level: nextLevel,
+                  max_level: Math.max(
+                    nextLevel,
+                    previousProgress?.max_level || 1,
+                  ),
+                }),
                 total_correct: { increment: 1 },
                 total_attempts: { increment: 1 },
                 last_played_at: new Date(),
               },
             });
 
-            gameLeveledUp = true;
+            gameLeveledUp =
+              currentGameLevel === previousProgress?.current_level;
           } else {
             // 최대 레벨에 도달한 경우
-            experienceGained = 5 * previousLevel; // 보너스 경험치 감소
+            experienceGained = 10 * previousLevel;
             totalExperienceGained = experienceGained;
             finalExperience = currentExperience + experienceGained;
-            console.log('experienceGained_3', experienceGained);
-            console.log('currentExperience_2', currentExperience);
 
-            // 총 시도 횟수만 증가
             await prisma.userGameProgress.update({
               where: {
                 user_id_game_type_id: {
@@ -271,7 +274,8 @@ export class GamesService {
               },
             });
 
-            levelCompleted = false; // 최대 레벨이므로 레벨 완료 표시 안함
+            levelCompleted =
+              currentGameLevel === previousProgress?.current_level;
           }
 
           console.log('experienceGained_4', experienceGained);
