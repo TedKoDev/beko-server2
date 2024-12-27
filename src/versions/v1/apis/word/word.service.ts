@@ -90,9 +90,10 @@ export class WordService implements OnModuleInit {
       today.setHours(0, 0, 0, 0); // 시간을 00:00:00으로 설정
 
       const todaysWords = await this.prisma.selected_words.findMany({
-        where: {
-          selected_date: today,
+        orderBy: {
+          selected_date: 'desc', // 최신순으로 정렬
         },
+        take: 3, // 최신 3개 가져오기
         include: {
           word: true,
         },
