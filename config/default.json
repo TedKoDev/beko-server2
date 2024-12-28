@@ -17,7 +17,7 @@
   },
   "database": {
     "postsql": {
-      "url": "postgresql://bekoAdmin:beko1234@172.18.0.2:5432/bekodb"
+      "url": "postgresql://admin:1234@localhost:5432/bekodb?schema=public"
     }
   },
   "mail": {

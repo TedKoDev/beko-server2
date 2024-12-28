@@ -93,9 +93,15 @@ export class AuthService {
           // account_status: accountStatus.ACTIVE,
           country_id: country_id,
           terms_agreed: term_agreement,
+          terms_agreed_at: new Date(),
           privacy_agreed: privacy_agreement,
+          privacy_agreed_at: new Date(),
           marketing_agreed: marketing_agreement,
+          marketing_agreed_at: new Date(),
           notification_benefit: notification_benefit,
+          notification_community: true,
+          notification_benefit_at: new Date(),
+          notification_community_at: new Date(),
         },
       });
 
