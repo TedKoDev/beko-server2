@@ -649,6 +649,8 @@ export class UserService {
           terms_agreed_at: agreements.terms_agreed ? currentTime : null,
           privacy_agreed_at: agreements.privacy_agreed ? currentTime : null,
           marketing_agreed_at: agreements.marketing_agreed ? currentTime : null,
+          notification_benefit_at: currentTime,
+          notification_community_at: currentTime,
         },
       });
 
