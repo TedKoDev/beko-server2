@@ -30,4 +30,29 @@ export class EmailService {
       text: createEmailDto.content,
     });
   }
+
+  async sendPasswordResetEmail(email: string, token: string) {
+    // const url = `http://api.berakorean.com/reset-password?token=${token}`;
+    const url = `http://localhost:3000/reset-password?token=${token}`;
+
+    return this.mailerService.sendMail({
+      to: email,
+      subject: 'Password Reset Request - Bera Korean',
+      template: 'reset-password',
+      context: {
+        url,
+      },
+    });
+  }
+
+  async sendTemporaryPassword(email: string, temporaryPassword: string) {
+    return this.mailerService.sendMail({
+      to: email,
+      subject: 'Your Temporary Password - Bera Korean',
+      template: 'temporary-password',
+      context: {
+        temporaryPassword,
+      },
+    });
+  }
 }

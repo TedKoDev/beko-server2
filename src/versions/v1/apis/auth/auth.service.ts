@@ -1,5 +1,6 @@
 import { PrismaService } from '@/prisma';
 import { ROLE } from '@/types/v1'; // accountStatus import
+import { MailerService } from '@nestjs-modules/mailer';
 import {
   HttpException,
   HttpStatus,
@@ -7,6 +8,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { accountStatus, social_provider } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -27,6 +29,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService, // EmailService 주입
     private readonly countryService: CountryService, // CountryService 주입
+    private readonly mailerService: MailerService,
+    private readonly configService: ConfigService,
   ) {}
   // 구글 로그인
 
@@ -680,5 +684,77 @@ export class AuthService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async forgotPassword(email: string) {
+    // 소셜 로그인이 아닌 사용자만 찾기
+    const user = await this.prisma.users.findFirst({
+      where: {
+        email,
+        social_login: {
+          none: {},
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(
+        'No user found with this email or user is registered through social login',
+      );
+    }
+
+    // 임시 비밀번호 생성 (8자리: 숫자 + 대소문자)
+    const temporaryPassword =
+      Math.random().toString(36).slice(-4) +
+      Math.random().toString(36).toUpperCase().slice(-4);
+
+    // 임시 비밀번호 해시화
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+    // 비밀번호 업데이트
+    await this.prisma.users.update({
+      where: {
+        user_id: user.user_id,
+      },
+      data: {
+        encrypted_password: hashedPassword,
+      },
+    });
+
+    // 임시 비밀번호 이메일 발송
+    await this.emailService.sendTemporaryPassword(email, temporaryPassword);
+
+    return { message: 'Temporary password has been sent to your email' };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    // 토큰으로 사용자 찾기
+    const user = await this.prisma.users.findFirst({
+      where: {
+        reset_password_token: token,
+        reset_password_expires: {
+          gt: new Date(), // 만료되지 않은 토큰
+        },
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+
+    // 새 비밀번호 해시
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // 비밀번호 업데이트 및 토큰 초기화
+    await this.prisma.users.update({
+      where: { user_id: user.user_id },
+      data: {
+        encrypted_password: hashedPassword,
+        reset_password_token: null,
+        reset_password_expires: null,
+      },
+    });
+
+    return { message: 'Password has been reset successfully' };
   }
 }
