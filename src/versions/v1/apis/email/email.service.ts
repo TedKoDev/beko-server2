@@ -10,7 +10,8 @@ export class EmailService {
   constructor(private readonly mailerService: MailerService) {}
 
   async sendUserConfirmation(email: string, token: string) {
-    const url = `http://api.berakorean.com/api/v1/auth/confirm?token=${token}`;
+    // const url = `http://api.berakorean.com/api/v1/auth/confirm?token=${token}`;
+    const url = `http://localhost:3000/api/v1/auth/confirm?token=${token}`;
     console.log(email, url);
     return this.mailerService.sendMail({
       to: email,
