@@ -757,4 +757,45 @@ export class AuthService {
 
     return { message: 'Password has been reset successfully' };
   }
+
+  async resendVerificationEmail(email: string) {
+    const user = await this.prisma.users.findFirst({
+      where: {
+        email,
+        is_email_verified: false,
+        social_login: {
+          none: {}, // 소셜 로그인이 아닌 경우만
+        },
+      },
+    });
+
+    if (!user) {
+      throw new HttpException(
+        '인증 대기 중인 이메일을 찾을 수 없습니다',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    // 새로운 인증 토큰 생성
+    const newEmailVerificationToken = uuidv4();
+
+    // 토큰 업데이트
+    await this.prisma.users.update({
+      where: { user_id: user.user_id },
+      data: { email_verification_token: newEmailVerificationToken },
+    });
+
+    try {
+      await this.emailService.sendUserConfirmation(
+        email,
+        newEmailVerificationToken,
+      );
+      return { message: '인증 이메일이 재전송되었습니다.' };
+    } catch (error) {
+      throw new HttpException(
+        '이메일 전송에 실패했습니다',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+  }
 }

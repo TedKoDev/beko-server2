@@ -21,6 +21,7 @@ import {
   ForgotPasswordDto,
   GetUserInfoBodyDto,
   RegisterUserDto,
+  ResendVerificationDto,
   ResetPasswordDto,
 } from './dto';
 
@@ -186,5 +187,11 @@ export class AuthController {
   @ApiOperation({ summary: 'Reset password with token' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.new_password);
+  }
+
+  @Post('resend-verification')
+  @ApiOperation({ summary: 'Resend verification email' })
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerificationEmail(dto.email);
   }
 }
