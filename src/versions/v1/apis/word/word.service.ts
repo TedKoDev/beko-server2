@@ -86,14 +86,11 @@ export class WordService implements OnModuleInit {
 
   async getWords() {
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // 시간을 00:00:00으로 설정
-
       const todaysWords = await this.prisma.selected_words.findMany({
         orderBy: {
           selected_date: 'desc', // 최신순으로 정렬
         },
-        take: 3, // 최신 3개 가져오기
+        take: 3, // 최신 3개만
         include: {
           word: true,
         },
@@ -109,7 +106,7 @@ export class WordService implements OnModuleInit {
         usage_count: word.usage_count,
       }));
     } catch (error) {
-      console.error("Failed to fetch today's words:", error);
+      console.error('Failed to fetch recent words:', error);
       return [];
     }
   }

@@ -679,4 +679,25 @@ export class UserService {
       );
     }
   }
+
+  // clearPushToken을 logoutUser로 이름 변경하고 기능 확장
+  async logoutUser(userId: number) {
+    try {
+      console.log('logoutUser', userId);
+      await this.prisma.users.update({
+        where: { user_id: userId },
+        data: {
+          expo_push_token: null,
+          hashed_refresh_token: null, // 리프레시 토큰 제거
+          updated_at: new Date(),
+        },
+      });
+      return { message: '로그아웃되었습니다.' };
+    } catch (error) {
+      throw new HttpException(
+        '로그아웃 처리 중 오류가 발생했습니다',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

@@ -10,7 +10,8 @@ export class EmailService {
   constructor(private readonly mailerService: MailerService) {}
 
   async sendUserConfirmation(email: string, token: string) {
-    const url = `http://api.berakorean.com/api/v1/auth/confirm?token=${token}`;
+    // const url = `http://api.berakorean.com/api/v1/auth/confirm?token=${token}`;
+    const url = `http://localhost:3000/api/v1/auth/confirm?token=${token}`;
     console.log(email, url);
     return this.mailerService.sendMail({
       to: email,
@@ -27,6 +28,31 @@ export class EmailService {
       to: createEmailDto.receiverEmail,
       subject: createEmailDto.subject,
       text: createEmailDto.content,
+    });
+  }
+
+  async sendPasswordResetEmail(email: string, token: string) {
+    // const url = `http://api.berakorean.com/reset-password?token=${token}`;
+    const url = `http://localhost:3000/reset-password?token=${token}`;
+
+    return this.mailerService.sendMail({
+      to: email,
+      subject: 'Password Reset Request - Bera Korean',
+      template: 'reset-password',
+      context: {
+        url,
+      },
+    });
+  }
+
+  async sendTemporaryPassword(email: string, temporaryPassword: string) {
+    return this.mailerService.sendMail({
+      to: email,
+      subject: 'Your Temporary Password - Bera Korean',
+      template: 'temporary-password',
+      context: {
+        temporaryPassword,
+      },
     });
   }
 }

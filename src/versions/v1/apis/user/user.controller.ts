@@ -216,4 +216,23 @@ export class UserController {
       agreements,
     );
   }
+
+  @Post('logout')
+  @Auth(['ANY'])
+  async logout(
+    @Req() req: { user: { userId: number } },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    // Clear push notification token and refresh token in DB
+    await this.userService.logoutUser(req.user.userId);
+
+    // Clear refresh token cookie
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+
+    return { message: '로그아웃되었습니다.' };
+  }
 }

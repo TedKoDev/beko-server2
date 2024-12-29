@@ -10,16 +10,19 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ApiOperation } from '@nestjs/swagger';
 import { social_provider } from '@prisma/client';
-
 import { Request, Response } from 'express';
 import { SlackService } from '../utils/slack/slack.service';
 import { AUTH_SERVICE_TOKEN, AuthService } from './auth.service';
 import {
   ConfirmEmailDto,
   DevLoginDto,
+  ForgotPasswordDto,
   GetUserInfoBodyDto,
   RegisterUserDto,
+  ResendVerificationDto,
+  ResetPasswordDto,
 } from './dto';
 
 @Controller({
@@ -172,5 +175,23 @@ export class AuthController {
         email: user.email,
       },
     };
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Request password reset' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Reset password with token' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.new_password);
+  }
+
+  @Post('resend-verification')
+  @ApiOperation({ summary: 'Resend verification email' })
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerificationEmail(dto.email);
   }
 }
