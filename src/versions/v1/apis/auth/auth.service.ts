@@ -181,12 +181,14 @@ export class AuthService {
         HttpStatus.NOT_FOUND,
       );
     }
+    console.log('user존재');
 
     const isMatch = await bcrypt.compare(password, user.encrypted_password);
+    console.log('isMatch', isMatch);
     if (!isMatch) {
       throw new HttpException(
         '비밀번호가 일치하지 않습니다',
-        HttpStatus.UNAUTHORIZED,
+        HttpStatus.NOT_ACCEPTABLE,
       );
     }
 
