@@ -57,6 +57,8 @@ npx prisma migrate reset --schema=prisma/postsql.prisma
 
   - 프론트에서 처리
 
+- 모르는 단어 유사단어 알려주는 기능 임베딩 + vector DB
+
 - 서버의 도커 컨테이너 화 -> 무중단배포 AWS ECS 이용해서 배포하기
 
 - 웹버전 개발 시작
