@@ -50,3 +50,13 @@ pnpm add -D @types/node-cron
 # Prisma를 사용한 데이터 리셋
 
 npx prisma migrate reset --schema=prisma/postsql.prisma
+
+## 추가 진행할 사항
+
+- 글로벌화 = ip를 통한 접속자 국가확인 그에따른 언어 제공
+
+  - 프론트에서 처리
+
+- 서버의 도커 컨테이너 화 -> 무중단배포
+
+- 웹버전 개발 시작
