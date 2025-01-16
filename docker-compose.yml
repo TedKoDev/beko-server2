@@ -5,23 +5,37 @@ services:
     image: postgres:latest
     container_name: postgres_local
     environment:
-      POSTGRES_USER: ${DATABASE_USER}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: bekodb
     ports:
-      - '${DATABASE_PORT}:5432'
+      - '5432:5432'
     volumes:
-      - ./db:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
   prisma:
     image: node:16
     volumes:
       - .:/app
     working_dir: /app
+    environment:
+      POSTGRE_SQL_DATABASE_URL: 'postgresql://admin:1234@db:5432/bekodb'
     depends_on:
       - db
     networks:
-      - default
-    entrypoint: ["sh", "-c", "npx prisma migrate dev --schema=prisma/postsql.prisma --name init"]
+      - app-network
+    entrypoint:
+      [
+        'sh',
+        '-c',
+        'npx prisma migrate dev --schema=prisma/postsql.prisma --name init',
+      ]
 
 volumes:
   postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
