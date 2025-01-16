@@ -33,8 +33,35 @@ services:
         'npx prisma migrate dev --schema=prisma/postsql.prisma --name init',
       ]
 
+  ngrinder-controller:
+    image: ngrinder/controller
+    container_name: ngrinder-controller
+    restart: always
+    ports:
+      - '9000:80'
+      - '16001:16001'
+      - '12000-12009:12000-12009'
+    volumes:
+      - ./ngrinder-controller:/opt/ngrinder-controller
+    networks:
+      - app-network
+
+  ngrinder-agent:
+    image: ngrinder/agent
+    container_name: ngrinder-agent
+    restart: always
+    depends_on:
+      - ngrinder-controller
+    networks:
+      - app-network
+    environment:
+      - CONTROLLER_ADDR=ngrinder-controller
+    volumes:
+      - ./ngrinder-agent:/opt/ngrinder-agent
+
 volumes:
   postgres_data:
+  ngrinder-data:
 
 networks:
   app-network:
