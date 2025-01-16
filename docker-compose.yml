@@ -1,7 +1,25 @@
 version: '3.8'
 
 services:
+  api:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: beko_api
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://admin:1234@db:5432/bekodb
+    depends_on:
+      - db
+    networks:
+      - app-network
+    restart: always
+
   db:
+    platform: linux/amd64
     image: postgres:latest
     container_name: postgres_local
     environment:
@@ -16,12 +34,13 @@ services:
       - app-network
 
   prisma:
-    image: node:16
+    platform: linux/amd64
+    image: node:18
     volumes:
       - .:/app
     working_dir: /app
     environment:
-      POSTGRE_SQL_DATABASE_URL: 'postgresql://admin:1234@db:5432/bekodb'
+      DATABASE_URL: 'postgresql://admin:1234@db:5432/bekodb'
     depends_on:
       - db
     networks:
@@ -30,10 +49,11 @@ services:
       [
         'sh',
         '-c',
-        'npx prisma migrate dev --schema=prisma/postsql.prisma --name init',
+        'npx prisma generate --schema=prisma/postsql.prisma && npx prisma migrate dev --schema=prisma/postsql.prisma --name init',
       ]
 
   ngrinder-controller:
+    platform: linux/amd64
     image: ngrinder/controller
     container_name: ngrinder-controller
     restart: always
@@ -47,6 +67,7 @@ services:
       - app-network
 
   ngrinder-agent:
+    platform: linux/amd64
     image: ngrinder/agent
     container_name: ngrinder-agent
     restart: always

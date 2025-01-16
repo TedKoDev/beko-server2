@@ -66,3 +66,16 @@ Script Name: 원하는 이름 (예: api_test)
 URL: 테스트할 API 주소 (예: http://host.docker.internal:3000/api/v1/users)
 프로토콜: HTTP
 메소드: GET/POST/PUT 등 API에 맞게 선택
+
+이제 Docker 설정이 완료되었습니다. 주요 특징은 다음과 같습니다:
+Multi-stage Build: Dockerfile에서 빌드 단계와 실행 단계를 분리하여 최종 이미지 크기를 최소화했습니다.
+서비스 구성:
+api: NestJS 애플리케이션
+db: PostgreSQL 데이터베이스
+prisma: 데이터베이스 마이그레이션
+ngrinder: 성능 테스트 도구
+네트워크: 모든 서비스가 app-network로 연결되어 있어 서로 통신이 가능합니다.
+환경 설정: 데이터베이스 URL 등 환경 변수가 적절히 구성되어 있습니다.
+이제 다음 명령어로 애플리케이션을 실행할 수 있습니다:
+docker-compose up --build
+docker-compose up --build
