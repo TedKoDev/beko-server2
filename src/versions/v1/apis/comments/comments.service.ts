@@ -24,44 +24,47 @@ export class CommentsService {
   ) {}
 
   async create(userId: number, createCommentDto: CreateCommentDto) {
-    const comment = await this.prisma.comment.create({
-      data: {
-        post_id: createCommentDto.postId,
-        user_id: userId,
-        content: createCommentDto.content,
-        parent_comment_id: createCommentDto.parentCommentId,
-      },
-    });
-
-    await this.prisma.post.update({
-      where: { post_id: createCommentDto.postId },
-      data: { comments: { increment: 1 } },
-    });
-
-    const post = await this.prisma.post.findUnique({
-      where: { post_id: createCommentDto.postId },
-    });
-    if (post && post.user_id && post.user_id !== userId) {
-      const user = await this.prisma.users.findUnique({
-        where: { user_id: post.user_id },
+    return this.prisma.$transaction(async (tx) => {
+      const comment = await tx.comment.create({
+        data: {
+          post_id: createCommentDto.postId,
+          user_id: userId,
+          content: createCommentDto.content,
+          parent_comment_id: createCommentDto.parentCommentId,
+        },
       });
-      if (user && user.expo_push_token) {
-        await this.notificationService.sendPushNotification(
-          user.expo_push_token,
-          `새 댓글이 달렸습니다: ${createCommentDto.content}`,
-        );
+
+      await tx.post.update({
+        where: { post_id: createCommentDto.postId },
+        data: { comments: { increment: 1 } },
+      });
+
+      const post = await tx.post.findUnique({
+        where: { post_id: createCommentDto.postId },
+      });
+
+      if (post && post.user_id && post.user_id !== userId) {
+        const user = await tx.users.findUnique({
+          where: { user_id: post.user_id },
+        });
+        if (user && user.expo_push_token) {
+          await this.notificationService.sendPushNotification(
+            user.expo_push_token,
+            `새 댓글이 달렸습니다: ${createCommentDto.content}`,
+          );
+        }
       }
-    }
 
-    if (createCommentDto.media && createCommentDto.media.length > 0) {
-      const mediaData = createCommentDto.media.map((media) => ({
-        ...media,
-        commentId: comment.comment_id,
-      }));
-      await this.mediaService.createMedia(mediaData);
-    }
+      if (createCommentDto.media && createCommentDto.media.length > 0) {
+        const mediaData = createCommentDto.media.map((media) => ({
+          ...media,
+          commentId: comment.comment_id,
+        }));
+        await this.mediaService.createMedia(mediaData);
+      }
 
-    return comment;
+      return comment;
+    });
   }
 
   async findAll(paginationQuery: PaginationQueryDto, currentUserId: number) {
@@ -321,39 +324,41 @@ export class CommentsService {
   }
 
   async remove(id: number, userId: number, userRole: ROLE) {
-    const comment = await this.prisma.comment.findUnique({
-      where: { comment_id: id, deleted_at: null },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const comment = await tx.comment.findUnique({
+        where: { comment_id: id, deleted_at: null },
+      });
 
-    if (!comment) {
-      throw new ForbiddenException('Comment not found');
-    }
+      if (!comment) {
+        throw new ForbiddenException('Comment not found');
+      }
 
-    if (comment.isSelected && userRole !== ROLE.ADMIN) {
-      throw new ForbiddenException(
-        'You do not have permission to delete a selected answer',
-      );
-    }
+      if (comment.isSelected && userRole !== ROLE.ADMIN) {
+        throw new ForbiddenException(
+          'You do not have permission to delete a selected answer',
+        );
+      }
 
-    if (comment.user_id !== userId && userRole !== ROLE.ADMIN) {
-      throw new ForbiddenException(
-        'You do not have permission to delete this comment',
-      );
-    }
+      if (comment.user_id !== userId && userRole !== ROLE.ADMIN) {
+        throw new ForbiddenException(
+          'You do not have permission to delete this comment',
+        );
+      }
 
-    await this.mediaService.deleteMediaByCommentId(comment.comment_id);
+      await this.mediaService.deleteMediaByCommentId(comment.comment_id);
 
-    await this.prisma.post.update({
-      where: { post_id: comment.post_id },
-      data: { comments: { decrement: 1 } },
-    });
+      await tx.post.update({
+        where: { post_id: comment.post_id },
+        data: { comments: { decrement: 1 } },
+      });
 
-    return this.prisma.comment.update({
-      where: { comment_id: id },
-      data: {
-        deleted_at: new Date(),
-        status: 'DELETED',
-      },
+      return tx.comment.update({
+        where: { comment_id: id },
+        data: {
+          deleted_at: new Date(),
+          status: 'DELETED',
+        },
+      });
     });
   }
 

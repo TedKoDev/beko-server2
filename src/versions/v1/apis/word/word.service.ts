@@ -265,13 +265,23 @@ export class WordService implements OnModuleInit {
 
   // 유저의 단어장 조회
   async getUserWordList(userId: number, page: number = 1, limit: number = 20) {
-    return this.prisma.user_word.findMany({
+    const userWords = await this.prisma.user_word.findMany({
       where: {
         user_id: userId,
         deleted_at: null,
       },
       include: {
-        word: true,
+        word: {
+          select: {
+            word_id: true,
+            word: true,
+            meaning_en: true,
+            example_sentence: true,
+            example_translation: true,
+            part_of_speech: true,
+            usage_count: true,
+          },
+        },
       },
       skip: (page - 1) * limit,
       take: limit,
@@ -279,6 +289,12 @@ export class WordService implements OnModuleInit {
         created_at: 'desc',
       },
     });
+
+    return userWords.map((userWord) => ({
+      ...userWord.word,
+      notes: userWord.notes,
+      created_at: userWord.created_at,
+    }));
   }
 
   // 유저 단어장에서 단어 삭제

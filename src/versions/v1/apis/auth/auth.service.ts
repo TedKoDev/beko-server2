@@ -14,7 +14,6 @@ import { accountStatus, social_provider } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as config from 'config';
 import { pbkdf2Sync } from 'crypto';
-import * as dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 import { CountryService } from '../country/country.service';
 import { EmailService } from '../email';
@@ -45,115 +44,101 @@ export class AuthService {
     marketing_agreement: boolean,
   ) {
     try {
-      console.log('country_id', country_id);
-      console.log('term_agreement', term_agreement);
-      console.log('privacy_agreement', privacy_agreement);
-      console.log('marketing_agreement', marketing_agreement);
-
-      const existingEmailUser = await this.prisma.users.findFirst({
-        where: {
-          email,
-          social_login: {
-            none: {}, // 소셜 로그인이 아닌 경우만 체크
+      return await this.prisma.$transaction(async (tx) => {
+        const existingEmailUser = await tx.users.findFirst({
+          where: {
+            email,
+            social_login: {
+              none: {},
+            },
           },
-        },
-      });
+        });
 
-      if (existingEmailUser) {
-        throw new HttpException(
-          '이미 사용 중인 이메일입니다',
-          HttpStatus.CONFLICT,
-        );
-      }
+        if (existingEmailUser) {
+          throw new HttpException(
+            '이미 사용 중인 이메일입니다',
+            HttpStatus.CONFLICT,
+          );
+        }
 
-      const emailVerificationToken = uuidv4();
-      const encryptedPassword = await bcrypt.hash(password, 10);
+        const emailVerificationToken = uuidv4();
+        const encryptedPassword = await bcrypt.hash(password, 10);
 
-      let finalUsername = name;
-      const existingUsernameUser = await this.prisma.users.findUnique({
-        where: { username: name },
-      });
+        let finalUsername = name;
+        const existingUsernameUser = await tx.users.findUnique({
+          where: { username: name },
+        });
 
-      if (existingUsernameUser) {
-        const uniqueSuffix = `#${uuidv4().slice(0, 8)}`;
-        finalUsername = `${name}${uniqueSuffix}`;
-      }
-      let notification_benefit = true;
-      if (marketing_agreement === false) {
-        notification_benefit = false;
-      }
+        if (existingUsernameUser) {
+          const uniqueSuffix = `#${uuidv4().slice(0, 8)}`;
+          finalUsername = `${name}${uniqueSuffix}`;
+        }
 
-      const user = await this.prisma.users.create({
-        data: {
-          email,
-          encrypted_password: encryptedPassword,
+        let notification_benefit = true;
+        if (marketing_agreement === false) {
+          notification_benefit = false;
+        }
+
+        const user = await tx.users.create({
+          data: {
+            email,
+            encrypted_password: encryptedPassword,
+            username: finalUsername,
+            email_verification_token: emailVerificationToken,
+            is_email_verified: false,
+            role: ROLE.USER,
+            account_status: accountStatus.INACTIVE,
+            country_id: country_id,
+            terms_agreed: term_agreement,
+            terms_agreed_at: new Date(),
+            privacy_agreed: privacy_agreement,
+            privacy_agreed_at: new Date(),
+            marketing_agreed: marketing_agreement,
+            marketing_agreed_at: new Date(),
+            notification_benefit: notification_benefit,
+            notification_community: true,
+            notification_benefit_at: new Date(),
+            notification_community_at: new Date(),
+          },
+        });
+
+        try {
+          await this.emailService.sendUserConfirmation(
+            email,
+            emailVerificationToken,
+          );
+        } catch (emailError) {
+          throw new HttpException(
+            '이메일 전송에 실패했습니다',
+            HttpStatus.SERVICE_UNAVAILABLE,
+          );
+        }
+
+        await tx.point.create({
+          data: {
+            user_id: user.user_id,
+            points_change: 100,
+            change_reason: 'New user registration',
+          },
+        });
+
+        await tx.users.update({
+          where: { user_id: user.user_id },
+          data: { points: { increment: 100 } },
+        });
+
+        await this.countryService.updateUserCount(country_id, true);
+
+        return {
+          message: 'Please check your email to verify your account.',
           username: finalUsername,
-          email_verification_token: emailVerificationToken,
-          // email_verification_token: null,
-          is_email_verified: false,
-          // is_email_verified: true,
-          role: ROLE.USER,
-          account_status: accountStatus.INACTIVE,
-          // account_status: accountStatus.ACTIVE,
-          country_id: country_id,
-          terms_agreed: term_agreement,
-          terms_agreed_at: new Date(),
-          privacy_agreed: privacy_agreement,
-          privacy_agreed_at: new Date(),
-          marketing_agreed: marketing_agreement,
-          marketing_agreed_at: new Date(),
-          notification_benefit: notification_benefit,
-          notification_community: true,
-          notification_benefit_at: new Date(),
-          notification_community_at: new Date(),
-        },
+        };
       });
-
-      // 이메일 인증 부분 주석 처리
-
-      try {
-        await this.emailService.sendUserConfirmation(
-          email,
-          emailVerificationToken,
-        );
-      } catch (emailError) {
-        // 이메일 전송 실패 시 생성된 유저 삭제
-        await this.prisma.users.delete({ where: { user_id: user.user_id } });
-        throw new HttpException(
-          '이메일 전송에 실패했습니다',
-          HttpStatus.SERVICE_UNAVAILABLE,
-        );
-      }
-
-      // 이메일 인증 없이 바로 처리된 것으로 간주
-      await this.prisma.point.create({
-        data: {
-          user_id: user.user_id,
-          points_change: 100,
-          change_reason: 'New user registration',
-        },
-      });
-
-      // 포인트 user 테이블에 추가
-      await this.prisma.users.update({
-        where: { user_id: user.user_id },
-        data: { points: { increment: 100 } },
-      });
-
-      // 해당하는 country count +1 추가하기
-      // 국가 카운트 증가
-      await this.countryService.updateUserCount(country_id, true); // country_id를 문자열로 변환하여 사용
-
-      return {
-        message: 'Please check your email to verify your account.',
-        username: finalUsername,
-      };
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
       }
       if (error.code === 'P2002') {
-        // Prisma unique constraint error
         throw new HttpException(
           '중복된 데이터가 존재합니다',
           HttpStatus.CONFLICT,
@@ -181,8 +166,10 @@ export class AuthService {
         HttpStatus.NOT_FOUND,
       );
     }
+    console.log('user존재');
 
     const isMatch = await bcrypt.compare(password, user.encrypted_password);
+    console.log('isMatch', isMatch);
     if (!isMatch) {
       throw new HttpException(
         '비밀번호가 일치하지 않습니다',
@@ -269,57 +256,54 @@ export class AuthService {
 
   // 경험치 기반 레벨 업데이트 함수
   private async updateLevelBasedOnExp(userId: number) {
-    const user = await this.prisma.users.findUnique({
-      where: { user_id: userId },
-      select: { experience_points: true, level: true },
-    });
-
-    if (!user) return;
-
-    // 모든 레벨 임계값 가져오기 (오름차순)
-    const levelThresholds = await this.prisma.levelthreshold.findMany({
-      orderBy: { level: 'asc' },
-      select: { level: true, min_experience: true },
-    });
-
-    // 현재 경험치에 맞는 레벨 찾기
-    let appropriateLevel = 1; // 기본 레벨
-    for (const threshold of levelThresholds) {
-      if (user.experience_points >= threshold.min_experience) {
-        appropriateLevel = threshold.level;
-      } else {
-        break; // 현재 경험치보다 높은 임계값을 만나면 중단
-      }
-    }
-
-    // 현재 레벨과 다르다면 업데이트
-    if (user.level !== appropriateLevel) {
-      await this.prisma.users.update({
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.users.findUnique({
         where: { user_id: userId },
-        data: { level: appropriateLevel },
+        select: { experience_points: true, level: true },
       });
 
-      // 레벨업 했을 경우에만 포인트 지급 및 기록
-      if (appropriateLevel > user.level) {
-        const pointsToAdd = (appropriateLevel - user.level) * 100; // 레벨당 100포인트
+      if (!user) return;
 
-        await this.prisma.users.update({
-          where: { user_id: userId },
-          data: {
-            points: { increment: pointsToAdd },
-          },
-        });
+      const levelThresholds = await tx.levelthreshold.findMany({
+        orderBy: { level: 'asc' },
+        select: { level: true, min_experience: true },
+      });
 
-        // 포인트 지급 기록
-        await this.prisma.point.create({
-          data: {
-            user_id: userId,
-            points_change: pointsToAdd,
-            change_reason: `Level up to ${appropriateLevel}`,
-          },
-        });
+      let appropriateLevel = 1;
+      for (const threshold of levelThresholds) {
+        if (user.experience_points >= threshold.min_experience) {
+          appropriateLevel = threshold.level;
+        } else {
+          break;
+        }
       }
-    }
+
+      if (user.level !== appropriateLevel) {
+        await tx.users.update({
+          where: { user_id: userId },
+          data: { level: appropriateLevel },
+        });
+
+        if (appropriateLevel > user.level) {
+          const pointsToAdd = (appropriateLevel - user.level) * 100;
+
+          await tx.users.update({
+            where: { user_id: userId },
+            data: {
+              points: { increment: pointsToAdd },
+            },
+          });
+
+          await tx.point.create({
+            data: {
+              user_id: userId,
+              points_change: pointsToAdd,
+              change_reason: `Level up to ${appropriateLevel}`,
+            },
+          });
+        }
+      }
+    });
   }
 
   // 이메일 인증
@@ -382,30 +366,6 @@ export class AuthService {
         data: { level: newLevel },
       });
     }
-  }
-
-  // 커작 인증 토큰 발급
-  async getKeojakToken(keojakCode: string) {
-    const codeInfo = await this.prisma.authCode.findUnique({
-      where: { keojak_code: keojakCode },
-    });
-
-    if (!codeInfo) {
-      throw new Error('Invalid authorization code');
-    }
-
-    const isExpired = dayjs().isAfter(dayjs(codeInfo.expired_at));
-    if (isExpired) {
-      throw new Error('Authorization code expired');
-    }
-
-    const user = await this.prisma.users.findUnique({
-      where: { user_id: codeInfo.user_id },
-    });
-
-    const payload = { userId: codeInfo.user_id, role: user.role };
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '12h' });
-    return { access_token: accessToken };
   }
 
   // 사용자 정보
@@ -728,74 +688,73 @@ export class AuthService {
   }
 
   async resetPassword(token: string, newPassword: string) {
-    // 토큰으로 사용자 찾기
-    const user = await this.prisma.users.findFirst({
-      where: {
-        reset_password_token: token,
-        reset_password_expires: {
-          gt: new Date(), // 만료되지 않은 토큰
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.users.findFirst({
+        where: {
+          reset_password_token: token,
+          reset_password_expires: {
+            gt: new Date(),
+          },
         },
-      },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('Invalid or expired reset token');
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      await tx.users.update({
+        where: { user_id: user.user_id },
+        data: {
+          encrypted_password: hashedPassword,
+          reset_password_token: null,
+          reset_password_expires: null,
+        },
+      });
+
+      return { message: 'Password has been reset successfully' };
     });
-
-    if (!user) {
-      throw new UnauthorizedException('Invalid or expired reset token');
-    }
-
-    // 새 비밀번호 해시
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // 비밀번호 업데이트 및 토큰 초기화
-    await this.prisma.users.update({
-      where: { user_id: user.user_id },
-      data: {
-        encrypted_password: hashedPassword,
-        reset_password_token: null,
-        reset_password_expires: null,
-      },
-    });
-
-    return { message: 'Password has been reset successfully' };
   }
 
   async resendVerificationEmail(email: string) {
-    const user = await this.prisma.users.findFirst({
-      where: {
-        email,
-        is_email_verified: false,
-        social_login: {
-          none: {}, // 소셜 로그인이 아닌 경우만
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.users.findFirst({
+        where: {
+          email,
+          is_email_verified: false,
+          social_login: {
+            none: {},
+          },
         },
-      },
+      });
+
+      if (!user) {
+        throw new HttpException(
+          '인증 대기 중인 이메일을 찾을 수 없습니다',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      const newEmailVerificationToken = uuidv4();
+
+      await tx.users.update({
+        where: { user_id: user.user_id },
+        data: { email_verification_token: newEmailVerificationToken },
+      });
+
+      try {
+        await this.emailService.sendUserConfirmation(
+          email,
+          newEmailVerificationToken,
+        );
+        return { message: '인증 이메일이 재전송되었습니다.' };
+      } catch (error) {
+        throw new HttpException(
+          '이메일 전송에 실패했습니다',
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
     });
-
-    if (!user) {
-      throw new HttpException(
-        '인증 대기 중인 이메일을 찾을 수 없습니다',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
-    // 새로운 인증 토큰 생성
-    const newEmailVerificationToken = uuidv4();
-
-    // 토큰 업데이트
-    await this.prisma.users.update({
-      where: { user_id: user.user_id },
-      data: { email_verification_token: newEmailVerificationToken },
-    });
-
-    try {
-      await this.emailService.sendUserConfirmation(
-        email,
-        newEmailVerificationToken,
-      );
-      return { message: '인증 이메일이 재전송되었습니다.' };
-    } catch (error) {
-      throw new HttpException(
-        '이메일 전송에 실패했습니다',
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
-    }
   }
 }

@@ -1343,22 +1343,24 @@ export class PostsService {
   }
 
   async adminPickPost(postId: number) {
-    // 현재 게시글의 admin_pick 상태 조회
-    const post = await this.prisma.post.findUnique({
-      where: { post_id: postId },
-      select: { admin_pick: true },
+    return this.prisma.$transaction(async (tx) => {
+      // 현재 게시글의 admin_pick 상태 조회
+      const post = await tx.post.findUnique({
+        where: { post_id: postId },
+        select: { admin_pick: true },
+      });
+
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+
+      // admin_pick 상태 토글
+      const updatedPost = await tx.post.update({
+        where: { post_id: postId },
+        data: { admin_pick: !post.admin_pick }, // 현재 상태의 반대로 설정
+      });
+
+      return updatedPost; // 업데이트된 게시글 반환
     });
-
-    if (!post) {
-      throw new NotFoundException('Post not found');
-    }
-
-    // admin_pick 상태 토글
-    const updatedPost = await this.prisma.post.update({
-      where: { post_id: postId },
-      data: { admin_pick: !post.admin_pick }, // 현재 상태의 반대로 설정
-    });
-
-    return updatedPost; // 업데이트된 게시글 반환
   }
 }

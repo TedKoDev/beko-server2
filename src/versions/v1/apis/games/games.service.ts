@@ -20,16 +20,40 @@ export class GamesService {
   }
 
   async updateImageMatchingQuestion(questionId: number, dto: any) {
-    return this.prisma.gameQuestion.update({
-      where: { question_id: questionId },
-      data: dto,
+    return this.prisma.$transaction(async (tx) => {
+      // 먼저 질문이 존재하는지 확인
+      const question = await tx.gameQuestion.findUnique({
+        where: { question_id: questionId },
+      });
+
+      if (!question) {
+        throw new NotFoundException('Question not found');
+      }
+
+      // 질문 업데이트
+      return tx.gameQuestion.update({
+        where: { question_id: questionId },
+        data: dto,
+      });
     });
   }
 
   async deleteImageMatchingQuestion(questionId: number) {
-    return this.prisma.gameQuestion.update({
-      where: { question_id: questionId },
-      data: { deleted_at: new Date() },
+    return this.prisma.$transaction(async (tx) => {
+      // 먼저 질문이 존재하는지 확인
+      const question = await tx.gameQuestion.findUnique({
+        where: { question_id: questionId },
+      });
+
+      if (!question) {
+        throw new NotFoundException('Question not found');
+      }
+
+      // soft delete 수행
+      return tx.gameQuestion.update({
+        where: { question_id: questionId },
+        data: { deleted_at: new Date() },
+      });
     });
   }
   async getAllImageMatchingQuestionListwithPagenation(
