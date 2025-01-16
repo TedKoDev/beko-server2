@@ -11,45 +11,39 @@ export class FollowService {
       throw new BadRequestException('You cannot follow yourself.');
     }
 
-    const existingFollow = await this.prisma.follow.findFirst({
-      where: {
-        follower_id: followerId,
-        following_id: followingId,
-      },
-    });
-
-    if (existingFollow && !existingFollow.deleted_at) {
-      // 언팔로우
-      await this.prisma.follow.update({
+    return this.prisma.$transaction(async (tx) => {
+      const existingFollow = await tx.follow.findFirst({
         where: {
-          follow_id: existingFollow.follow_id,
-        },
-        data: {
-          deleted_at: new Date(),
-        },
-      });
-      return { message: 'Unfollowed successfully' };
-    } else if (existingFollow && existingFollow.deleted_at) {
-      // 팔로우 다시 복구
-      await this.prisma.follow.update({
-        where: {
-          follow_id: existingFollow.follow_id,
-        },
-        data: {
-          deleted_at: null,
-        },
-      });
-      return { message: 'Followed successfully' };
-    } else {
-      // 새로운 팔로우
-      await this.prisma.follow.create({
-        data: {
           follower_id: followerId,
           following_id: followingId,
         },
       });
-      return { message: 'Followed successfully' };
-    }
+
+      if (existingFollow && !existingFollow.deleted_at) {
+        // 언팔로우
+        await tx.follow.update({
+          where: { follow_id: existingFollow.follow_id },
+          data: { deleted_at: new Date() },
+        });
+        return { message: 'Unfollowed successfully' };
+      } else if (existingFollow && existingFollow.deleted_at) {
+        // 팔로우 복구
+        await tx.follow.update({
+          where: { follow_id: existingFollow.follow_id },
+          data: { deleted_at: null },
+        });
+        return { message: 'Followed successfully' };
+      } else {
+        // 새로운 팔로우
+        await tx.follow.create({
+          data: {
+            follower_id: followerId,
+            following_id: followingId,
+          },
+        });
+        return { message: 'Followed successfully' };
+      }
+    });
   }
 
   async getFollowers(userId: number, paginationQuery: PaginationQueryDto) {
