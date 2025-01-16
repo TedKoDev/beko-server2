@@ -14,7 +14,6 @@ import { accountStatus, social_provider } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as config from 'config';
 import { pbkdf2Sync } from 'crypto';
-import * as dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 import { CountryService } from '../country/country.service';
 import { EmailService } from '../email';
@@ -367,30 +366,6 @@ export class AuthService {
         data: { level: newLevel },
       });
     }
-  }
-
-  // 커작 인증 토큰 발급
-  async getKeojakToken(keojakCode: string) {
-    const codeInfo = await this.prisma.authCode.findUnique({
-      where: { keojak_code: keojakCode },
-    });
-
-    if (!codeInfo) {
-      throw new Error('Invalid authorization code');
-    }
-
-    const isExpired = dayjs().isAfter(dayjs(codeInfo.expired_at));
-    if (isExpired) {
-      throw new Error('Authorization code expired');
-    }
-
-    const user = await this.prisma.users.findUnique({
-      where: { user_id: codeInfo.user_id },
-    });
-
-    const payload = { userId: codeInfo.user_id, role: user.role };
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '12h' });
-    return { access_token: accessToken };
   }
 
   // 사용자 정보
