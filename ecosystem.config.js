@@ -7,6 +7,7 @@ module.exports = {
     max_memory_restart: "1G",
     env: {
       NODE_ENV: "production"
-    }
+    },
+    pre_restart: "pnpm run build"
   }]
 }
