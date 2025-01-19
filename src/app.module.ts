@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SentryModule } from '@sentry/nestjs/setup';
 import * as config from 'config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -12,6 +13,7 @@ import { NotificationModule } from './versions/v1/apis/notification/notification
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     V1Module,
     JwtModule.register({ global: true, secret: config.get('jwt.secret') }),
     ScheduleModule.forRoot(),

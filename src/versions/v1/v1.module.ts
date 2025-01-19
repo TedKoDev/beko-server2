@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { SlackService } from './apis/utils/slack/slack.service';
 
 import { AdBannerModule } from './apis/ad-banner';
 import { AdminBlockModule } from './apis/admin-block';
@@ -27,6 +29,9 @@ import { WordModule } from './apis/word';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     AuthModule,
     UserModule,
     UserBlockModule,
@@ -53,5 +58,6 @@ import { WordModule } from './apis/word';
     NotificationModule,
     AppVersionModule,
   ],
+  providers: [SlackService],
 })
 export class V1Module {}

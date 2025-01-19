@@ -78,3 +78,7 @@ Script Name: 원하는 이름 (예: api_test)
 URL: 테스트할 API 주소 (예: http://host.docker.internal:3000/api/v1/users)
 프로토콜: HTTP
 메소드: GET/POST/PUT 등 API에 맞게 선택
+
+# sentry 로깅 서비스 설치
+
+pnpm add @sentry/node @sentry/profiling-node

@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport';
 import { CountryModule } from '../country/country.module';
 import { EmailModule, EmailService } from '../email';
 import { SlackModule } from '../utils/slack/slack.module';
+import { SlackService } from '../utils/slack/slack.service';
 import { AuthController } from './auth.controller';
 import { AuthProvider } from './auth.provider';
 import { JwtStrategy } from './strategy';
@@ -16,7 +17,13 @@ import { JwtStrategy } from './strategy';
     SlackModule,
     CountryModule,
   ],
-  providers: [AuthProvider, JwtStrategy, PrismaService, EmailService],
+  providers: [
+    AuthProvider,
+    JwtStrategy,
+    PrismaService,
+    EmailService,
+    SlackService,
+  ],
   controllers: [AuthController],
   exports: [AuthProvider, EmailService],
 })

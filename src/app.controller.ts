@@ -9,4 +9,9 @@ export class AppController {
   healthCheck(): number {
     return this.appService.getSuccess();
   }
+
+  @Get('/debug-sentry')
+  getError() {
+    throw new Error('My first Sentry error!');
+  }
 }

@@ -17,6 +17,7 @@ import { pbkdf2Sync } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { CountryService } from '../country/country.service';
 import { EmailService } from '../email';
+import { SlackService } from '../utils/slack/slack.service';
 import { UpdateNotificationSettingsDto } from './dto/notification-settings.dto';
 
 export const AUTH_SERVICE_TOKEN = 'AUTH_SERVICE_TOKEN';
@@ -30,6 +31,7 @@ export class AuthService {
     private readonly countryService: CountryService, // CountryService 주입
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
+    private readonly slackService: SlackService,
   ) {}
   // 구글 로그인
 
@@ -101,6 +103,9 @@ export class AuthService {
             notification_community_at: new Date(),
           },
         });
+
+        // Slack 알림 전송
+        await this.slackService.sendNewUserNotification(email, finalUsername);
 
         try {
           await this.emailService.sendUserConfirmation(

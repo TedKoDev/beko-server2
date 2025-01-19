@@ -4,6 +4,7 @@ import {
   VersioningType,
 } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import './instrument';
 
 import * as config from 'config';
 import * as dotenv from 'dotenv';
@@ -18,6 +19,7 @@ import { CustomException } from './plugins';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   dotenv.config();
+
   app.useStaticAssets(join(__dirname, 'public'));
   app.setBaseViewsDir(join(__dirname, 'views'));
   app.setViewEngine('ejs');
