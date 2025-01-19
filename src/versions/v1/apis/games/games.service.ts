@@ -224,8 +224,26 @@ export class GamesService {
           experienceGained = 10 * currentUserLevel; // 레벨이 높을수록 더 많은 경험치
           totalExperienceGained = experienceGained;
           finalExperience = currentExperience + experienceGained;
-          console.log('experienceGained_1', experienceGained);
-          console.log('currentExperience_1', currentExperience);
+
+          // 레벨 클리어 포인트 지급
+          const levelClearPoints = 10 * currentGameLevel; // 레벨이 높을수록 더 많은 포인트
+
+          // 포인트 지급 기록 생성
+          await prisma.point.create({
+            data: {
+              user_id: userId,
+              points_change: levelClearPoints,
+              change_reason: `Cleared game level ${currentGameLevel}`,
+            },
+          });
+
+          // 사용자 포인트 업데이트
+          await prisma.users.update({
+            where: { user_id: userId },
+            data: {
+              points: { increment: levelClearPoints },
+            },
+          });
 
           // 게임의 최대 레벨 확인
           const maxGameLevel = await prisma.gameQuestion.groupBy({

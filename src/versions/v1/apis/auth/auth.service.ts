@@ -117,14 +117,14 @@ export class AuthService {
         await tx.point.create({
           data: {
             user_id: user.user_id,
-            points_change: 100,
+            points_change: 1000,
             change_reason: 'New user registration',
           },
         });
 
         await tx.users.update({
           where: { user_id: user.user_id },
-          data: { points: { increment: 100 } },
+          data: { points: { increment: 1000 } },
         });
 
         await this.countryService.updateUserCount(country_id, true);
@@ -506,10 +506,10 @@ export class AuthService {
           data: {
             email,
             username,
-            // encrypted_password: null, // 소셜 로그인은 비밀번호 없음
             is_email_verified: true,
             role: ROLE.USER,
             account_status: accountStatus.ACTIVE,
+            points: 1000, // 초기 포인트 설정
             social_login: {
               create: {
                 social_provider: provider,
@@ -520,11 +520,11 @@ export class AuthService {
           },
         });
 
-        // 신규 가입 포인트 지급
+        // 신규 가입 포인트 지급 기록
         await prisma.point.create({
           data: {
             user_id: user.user_id,
-            points_change: 2000,
+            points_change: 1000,
             change_reason: `New user registration with ${provider}`,
           },
         });
