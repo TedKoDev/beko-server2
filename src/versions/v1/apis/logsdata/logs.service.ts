@@ -13,6 +13,7 @@ export class LogsService {
         link: data.link,
         name: data.name,
         topic: data.topic,
+        filelink: data.filelink,
       },
     });
 
@@ -38,6 +39,7 @@ export class LogsService {
         link: data.link,
         name: data.name,
         topic: data.topic,
+        filelink: data.filelink,
       },
     });
   }
@@ -100,6 +102,7 @@ export class LogsService {
         link: true,
         name: true,
         topic: true,
+        filelink: true,
         created_at: true,
       },
       orderBy: {

@@ -206,12 +206,34 @@ export class AuthService {
   }
 
   async generateTokens(user: any) {
+    console.log('[Token Generation] ====== 새로운 토큰 생성 시작 ======');
+    console.log('[Token Generation] 토큰 생성 대상 유저:', {
+      userId: user.user_id,
+      role: user.role,
+      timestamp: new Date().toISOString(),
+    });
+
     const payload = { userId: user.user_id, role: user.role };
 
     const [access_token, refresh_token] = await Promise.all([
       this.jwtService.signAsync(payload, { expiresIn: '60m' }), // 액세스 토큰 60분
-      this.jwtService.signAsync(payload, { expiresIn: '14d' }), // 리프레시 토큰 14일
+      this.jwtService.signAsync(payload, { expiresIn: '30d' }), // 리프레시 토큰 14일
     ]);
+
+    const decodedAccess = this.jwtService.decode(access_token);
+    const decodedRefresh = this.jwtService.decode(refresh_token);
+
+    console.log('[Token Generation] 토큰 생성 완료:', {
+      accessToken: {
+        exp: new Date(decodedAccess.exp * 1000).toISOString(),
+        iat: new Date(decodedAccess.iat * 1000).toISOString(),
+      },
+      refreshToken: {
+        exp: new Date(decodedRefresh.exp * 1000).toISOString(),
+        iat: new Date(decodedRefresh.iat * 1000).toISOString(),
+      },
+    });
+    console.log('[Token Generation] ====== 새로운 토큰 생성 완료 ======');
 
     return {
       access_token,
@@ -220,41 +242,112 @@ export class AuthService {
   }
 
   async updateRefreshToken(userId: number, refresh_token: string) {
+    console.log('[Refresh Token Update] 리프레시 토큰 업데이트 시작:', {
+      userId,
+      timestamp: new Date().toISOString(),
+    });
+
     // Store hashed refresh token
     const hash = await bcrypt.hash(refresh_token, 10);
     await this.prisma.users.update({
       where: { user_id: userId },
       data: { hashed_refresh_token: hash },
     });
+
+    console.log('[Refresh Token Update] 리프레시 토큰 해시 업데이트 완료:', {
+      userId,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   async refreshTokens(refresh_token: string) {
     try {
+      console.log('[Token Refresh] ====== 토큰 재발급 프로세스 시작 ======');
+      console.log('[Token Refresh] 리프레시 토큰 검증 시작');
+
       // Verify refresh token
       const payload = await this.jwtService.verifyAsync(refresh_token);
+      console.log('[Token Refresh] 리프레시 토큰 검증 결과:', {
+        userId: payload.userId,
+        role: payload.role,
+        iat: new Date(payload.iat * 1000).toISOString(),
+        exp: new Date(payload.exp * 1000).toISOString(),
+      });
+
       const user = await this.prisma.users.findUnique({
         where: { user_id: payload.userId },
       });
 
       if (!user || !user.hashed_refresh_token) {
+        console.log(
+          '[Token Refresh] 에러: 유저가 존재하지 않거나 리프레시 토큰 해시가 없음',
+          {
+            userExists: !!user,
+            hasRefreshToken: !!user?.hashed_refresh_token,
+          },
+        );
         throw new UnauthorizedException('Invalid refresh token');
       }
+
+      console.log('[Token Refresh] 유저 정보 조회 성공:', {
+        userId: user.user_id,
+        username: user.username,
+      });
 
       // Verify stored hash
       const isValid = await bcrypt.compare(
         refresh_token,
         user.hashed_refresh_token,
       );
+      console.log('[Token Refresh] 저장된 리프레시 토큰 해시 검증:', {
+        isValid,
+      });
+
       if (!isValid) {
+        console.log('[Token Refresh] 에러: 저장된 해시 검증 실패');
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      // Generate new tokens
+      // Generate new tokens (both access and refresh)
+      console.log(
+        '[Token Refresh] 새로운 액세스 토큰과 리프레시 토큰 생성 시작',
+      );
       const tokens = await this.generateTokens(user);
-      await this.updateRefreshToken(user.user_id, tokens.refresh_token);
+      console.log('[Token Refresh] 새로운 토큰 생성 완료:', {
+        accessTokenExists: !!tokens.access_token,
+        refreshTokenExists: !!tokens.refresh_token,
+        timestamp: new Date().toISOString(),
+      });
 
-      return tokens;
-    } catch {
+      // Update refresh token in database
+      await this.updateRefreshToken(user.user_id, tokens.refresh_token);
+      console.log('[Token Refresh] 새로운 리프레시 토큰으로 DB 업데이트 완료');
+      console.log('[Token Refresh] ====== 토큰 재발급 프로세스 완료 ======');
+
+      return {
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+      };
+    } catch (error) {
+      console.log(
+        '[Token Refresh] ====== 토큰 재발급 프로세스 에러 발생 ======',
+      );
+      console.log('[Token Refresh] 에러 상세 정보:', {
+        name: error.name,
+        message: error.message,
+        expiredAt: error.expiredAt
+          ? new Date(error.expiredAt).toISOString()
+          : null,
+        timestamp: new Date().toISOString(),
+        stack: error.stack,
+      });
+
+      if (error.name === 'TokenExpiredError') {
+        console.log('[Token Refresh] 리프레시 토큰 만료됨');
+        throw new UnauthorizedException('Refresh token has expired');
+      }
+
+      console.log('[Token Refresh] 유효하지 않은 리프레시 토큰');
       throw new UnauthorizedException('Invalid refresh token');
     }
   }

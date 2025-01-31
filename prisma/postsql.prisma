@@ -272,6 +272,7 @@ model youtubelink {
   link        String    @db.VarChar(255)  // 유튜브 링크
   name        String?   @db.VarChar(255) @default("Korean Study")  // 유튜버 이름
   topic       String?   @db.VarChar(255)   // 주제
+  filelink    String?   @db.VarChar(255)   // 파일 링크
   created_at  DateTime  @default(now()) @db.Timestamp
   updated_at  DateTime? @db.Timestamp
   deleted_at  DateTime? @db.Timestamp

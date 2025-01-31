@@ -9,4 +9,7 @@ export class YoutubeCreateDto {
 
   @IsString()
   topic: string;
+
+  @IsString()
+  filelink: string;
 }
