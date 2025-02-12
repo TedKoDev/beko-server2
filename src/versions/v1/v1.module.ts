@@ -25,8 +25,8 @@ import { UserModule } from './apis/user';
 import { UserBlockModule } from './apis/userblock';
 import { S3Module } from './apis/utils/s3service/s3.module';
 import { SlackModule } from './apis/utils/slack/slack.module';
+import { VectorDocumentModule } from './apis/vector-document/vector-document.module';
 import { WordModule } from './apis/word';
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -55,6 +55,7 @@ import { WordModule } from './apis/word';
     SchoolModule,
     GamesModule,
     LevelThresholdModule,
+    VectorDocumentModule,
     NotificationModule,
     AppVersionModule,
   ],

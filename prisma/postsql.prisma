@@ -1,7 +1,7 @@
 datasource db {
   provider = "postgresql"
   url      = env("POSTGRE_SQL_DATABASE_URL")
-  extensions = [uuidOssp(map: "uuid-ossp")]
+  extensions = [vector, uuidOssp(map: "uuid-ossp")]
 }
 
 generator client {
@@ -12,6 +12,18 @@ generator client {
 enum LogType {
   TODAY_TASK_PARTICIPATION
 }
+
+
+model VectorDocument {
+  id         String @id @default(uuid())
+  title      String  // 문서 제목 (예: "서울대 어학당 수강료")
+  content    String  // 문서 내용 (예: "2024년 서울대학교 어학당 수강료는 ...")
+  embedding  Unsupported("vector(1536)") // 벡터 데이터 저장
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  deleted_at DateTime?
+}
+
 
 
 model AppVersion {

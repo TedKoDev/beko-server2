@@ -82,3 +82,39 @@ URL: 테스트할 API 주소 (예: http://host.docker.internal:3000/api/v1/users
 # sentry 로깅 서비스 설치
 
 pnpm add @sentry/node @sentry/profiling-node
+
+# 벡터를 위한 페키지 추가부터
+
+## PGVector 설정하기
+
+### 1. Docker Compose 설정
+
+- PostgreSQL 16 버전과 PGVector를 함께 사용하기 위해 `docker-compose.yml`의 db 서비스 이미지를 수정:
+
+```yaml
+db:
+  image: pgvector/pgvector:pg16
+```
+
+### 2. Prisma 스키마 설정
+
+- `prisma/postsql.prisma` 파일에 vector 확장 추가:
+
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRE_SQL_DATABASE_URL")
+  extensions = [vector, uuidOssp(map: "uuid-ossp")]
+}
+```
+
+### 3. 마이그레이션 실행
+
+```bash
+pnpm prisma migrate dev --schema=prisma/postsql.prisma --name add_vector_document
+```
+
+### 주의사항
+
+- 기존 데이터베이스가 보존된 상태에서 PGVector 설정이 추가됩니다.
+- `./db` 디렉토리의 데이터는 볼륨 마운트로 인해 보존됩니다.
