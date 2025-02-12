@@ -7,6 +7,7 @@ import { AdminBlockModule } from './apis/admin-block';
 import { AdminDashboardModule } from './apis/admin-dashboard/admin-dashboard.module';
 import { AppVersionModule } from './apis/app-version/app-version.module';
 import { AuthModule } from './apis/auth';
+import { ChatbotModule } from './apis/chatbot/chatbot.module';
 import { CommentsModule } from './apis/comments';
 import { CountryModule } from './apis/country/country.module';
 import { EmailModule } from './apis/email';
@@ -58,6 +59,7 @@ import { WordModule } from './apis/word';
     VectorDocumentModule,
     NotificationModule,
     AppVersionModule,
+    ChatbotModule,
   ],
   providers: [SlackService],
 })

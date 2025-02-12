@@ -7,13 +7,15 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation } from '@nestjs/swagger';
 import { CreateVectorDocumentDto } from './dto/create-vector-document.dto';
 import { UpdateVectorDocumentDto } from './dto/update-vector-document.dto';
 import { VectorDocumentService } from './vector-document.service';
 
-@ApiTags('vector-document')
-@Controller('vector-document')
+@Controller({
+  path: 'vector-document',
+  version: '1',
+})
 export class VectorDocumentController {
   constructor(private readonly vectorDocumentService: VectorDocumentService) {}
 

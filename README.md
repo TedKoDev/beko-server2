@@ -118,3 +118,139 @@ pnpm prisma migrate dev --schema=prisma/postsql.prisma --name add_vector_documen
 
 - 기존 데이터베이스가 보존된 상태에서 PGVector 설정이 추가됩니다.
 - `./db` 디렉토리의 데이터는 볼륨 마운트로 인해 보존됩니다.
+
+# OpenAI 임베딩과 벡터 문서 기능
+
+## 설정 방법
+
+### 1. OpenAI API 키 설정
+
+`config/default.json` 파일에 OpenAI API 키를 직접 설정:
+
+```json
+{
+  "openai": {
+    "apiKey": "your-api-key-here"
+  }
+}
+```
+
+### 2. 필요한 패키지 설치
+
+```bash
+pnpm add openai
+```
+
+## 벡터 문서 API 사용법
+
+### 문서 생성
+
+POST `/api/v1/vector-documents`
+
+```json
+{
+  "title": "문서 제목",
+  "content": "문서 내용"
+}
+```
+
+- 문서 내용은 자동으로 OpenAI의 `text-embedding-3-small` 모델을 통해 1536차원의 벡터로 변환됩니다.
+- 변환된 벡터는 PostgreSQL의 vector 타입으로 저장됩니다.
+
+### 주의사항
+
+- OpenAI API 키가 환경변수에 설정되어 있어야 합니다.
+- PGVector 확장이 설치되어 있어야 합니다.
+- 문서 내용이 너무 길 경우 OpenAI API 제한에 걸릴 수 있습니다.
+
+# WebSocket 챗봇 기능
+
+## 설치
+
+WebSocket 관련 패키지 설치:
+
+```bash
+pnpm add @nestjs/websockets @nestjs/platform-socket.io socket.io
+```
+
+## 사용 방법
+
+### 1. 문서 등록
+
+먼저 벡터 문서를 등록합니다:
+
+```http
+POST /api/v1/vector-documents
+Content-Type: application/json
+
+{
+  "title": "문서 제목",
+  "content": "문서 내용"
+}
+```
+
+### 2. WebSocket 연결
+
+클라이언트에서 다음과 같이 연결합니다:
+
+```typescript
+import { io } from 'socket.io-client';
+
+const socket = io('http://your-server:3000/chatbot');
+
+// 연결 이벤트
+socket.on('connect', () => {
+  console.log('Connected to chat server');
+});
+
+// 질문하기
+socket.emit('ask', '질문 내용');
+
+// 응답 시작 이벤트
+socket.on('responseStart', () => {
+  console.log('챗봇이 응답을 시작합니다...');
+});
+
+// 응답 받기
+socket.on('response', (data) => {
+  console.log('답변:', data.answer);
+  console.log('관련 문서:', data.relevantDocuments);
+});
+
+// 에러 처리
+socket.on('error', (error) => {
+  console.error('Error:', error.message);
+});
+```
+
+### 응답 형식
+
+```typescript
+{
+  answer: string; // GPT가 생성한 답변
+  relevantDocuments: {
+    // 관련 문서 목록
+    id: string;
+    title: string;
+    content: string;
+    similarity: number; // 유사도 점수 (0-1)
+  }
+  [];
+}
+```
+
+### 주요 기능
+
+- 실시간 양방향 통신
+- 문서 내용 기반 답변 생성
+- 유사도 기반 문서 검색
+- 다국어 지원 (자동 번역)
+- 에러 처리 및 상태 알림
+
+### 기술 스택
+
+- NestJS WebSocket
+- Socket.IO
+- OpenAI GPT-4
+- PostgreSQL pgvector
+- OpenAI Embeddings

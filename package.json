@@ -35,8 +35,10 @@
     "@nestjs/mapped-types": "^2.0.5",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/platform-socket.io": "^11.0.9",
     "@nestjs/schedule": "^4.1.1",
     "@nestjs/swagger": "^7.4.0",
+    "@nestjs/websockets": "^11.0.9",
     "@prisma/client": "6.0.1",
     "@sentry/nestjs": "^8.50.0",
     "@sentry/node": "^8.50.0",
@@ -64,6 +66,7 @@
     "passport-oauth2": "^1.8.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.8.1",
     "tsc-alias": "^1.8.10",
     "uuid": "^10.0.0"
   },
