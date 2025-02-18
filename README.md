@@ -254,3 +254,14 @@ socket.on('error', (error) => {
 - OpenAI GPT-4
 - PostgreSQL pgvector
 - OpenAI Embeddings
+
+
+1. 개발 환경에서 실행 (자동 재시작):
+pm2 start ecosystem.config.js --env development
+
+2. 프로덕션 환경에서 실행 (수동 업데이트):
+pm2 start ecosystem.config.js --env production
+
+프로덕션 환경에서 업데이트가 필요할 때는:
+pnpm run build
+pm2 reload beko-app

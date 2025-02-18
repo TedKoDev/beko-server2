@@ -81,6 +81,8 @@ export class AuthService {
           notification_benefit = false;
         }
 
+        const finalCountryId = country_id || 1; // Set country_id to 1 if null
+
         const user = await tx.users.create({
           data: {
             email,
@@ -90,7 +92,7 @@ export class AuthService {
             is_email_verified: false,
             role: ROLE.USER,
             account_status: accountStatus.INACTIVE,
-            country_id: country_id,
+            country_id: finalCountryId,
             terms_agreed: term_agreement,
             terms_agreed_at: new Date(),
             privacy_agreed: privacy_agreement,
@@ -132,7 +134,7 @@ export class AuthService {
           data: { points: { increment: 1000 } },
         });
 
-        await this.countryService.updateUserCount(country_id, true);
+        await this.countryService.updateUserCount(finalCountryId, true);
 
         return {
           message: 'Please check your email to verify your account.',

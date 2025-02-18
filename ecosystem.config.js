@@ -8,6 +8,22 @@ module.exports = {
     env: {
       NODE_ENV: "production"
     },
-    pre_restart: "pnpm run build"
+    env_development: {
+      NODE_ENV: "development",
+      watch: [
+        "dist",
+        "src"
+      ],
+      ignore_watch: [
+        "node_modules",
+        "logs",
+        ".git"
+      ],
+      watch_options: {
+        followSymlinks: false
+      },
+      pre_restart: "pnpm run build",
+      exp_backoff_restart_delay: 100
+    }
   }]
 }
