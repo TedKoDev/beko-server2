@@ -598,9 +598,11 @@ export class AuthService {
 
       // 2. 새로운 소셜 로그인 사용자 생성
       const newUser = await this.prisma.$transaction(async (prisma) => {
-        const username = await this.generateUniqueUsername(
-          name || `${provider.toLowerCase()}_user`,
-        );
+        // 이메일의 @ 앞부분을 기본 이름으로 사용
+        const emailPrefix = email.split('@')[0];
+        // name이 비어있거나 undefined인 경우 이메일 prefix 사용
+        const defaultName = name?.trim() || emailPrefix || `${provider.toLowerCase()}_user`;
+        const username = await this.generateUniqueUsername(defaultName);
 
         const user = await prisma.users.create({
           data: {
@@ -609,7 +611,8 @@ export class AuthService {
             is_email_verified: true,
             role: ROLE.USER,
             account_status: accountStatus.ACTIVE,
-            points: 1000, // 초기 포인트 설정
+            points: 1000,
+            country_id: 1,
             social_login: {
               create: {
                 social_provider: provider,

@@ -1,8 +1,7 @@
 module.exports = {
   apps: [{
     name: "beko-app",
-    script: "pnpm",
-    args: "run start:prod",
+    script: "./dist/main.js",
     watch: false,
     max_memory_restart: "1G",
     env: {
@@ -24,6 +23,9 @@ module.exports = {
       },
       pre_restart: "pnpm run build",
       exp_backoff_restart_delay: 100
+    },
+    env_production: {
+      NODE_ENV: "production"
     }
   }]
 }
